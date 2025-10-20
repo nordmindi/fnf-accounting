@@ -1,18 +1,22 @@
 """Natural Language Processing API router."""
 
-from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
-from pydantic import BaseModel, Field
-import structlog
 
-from src.app.auth import get_current_user, CurrentUser
-from src.app.dependencies import get_llm_adapter, get_rule_engine, get_document_service, get_extraction_service
-from src.domain.natural_language_service import NaturalLanguageService
-from src.domain.services import BookingService, DocumentService, ExtractionService
+import structlog
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from pydantic import BaseModel, Field
+
 from src.adapters.llm import LLMAdapter
+from src.app.auth import CurrentUser, get_current_user
+from src.app.dependencies import (
+    get_document_service,
+    get_extraction_service,
+    get_llm_adapter,
+    get_rule_engine,
+)
+from src.domain.natural_language_service import NaturalLanguageService
+from src.domain.services import DocumentService, ExtractionService
 from src.rules.engine import RuleEngine
-from src.infra.config import get_settings
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -28,12 +32,12 @@ class NaturalLanguageResponse(BaseModel):
     """Response model for natural language processing."""
     success: bool = Field(..., description="Whether the processing was successful")
     message: str = Field(..., description="User-friendly message")
-    booking_id: Optional[str] = Field(None, description="Created booking ID if successful")
-    booking_details: Optional[dict] = Field(None, description="Booking details")
+    booking_id: str | None = Field(None, description="Created booking ID if successful")
+    booking_details: dict | None = Field(None, description="Booking details")
     status: str = Field(..., description="Processing status (GREEN/YELLOW/RED)")
     reason_codes: list = Field(default_factory=list, description="Reason codes for the decision")
-    policy_used: Optional[str] = Field(None, description="Policy that was applied")
-    receipt_attachment_prompt: Optional[str] = Field(None, description="Prompt for receipt attachment")
+    policy_used: str | None = Field(None, description="Policy that was applied")
+    receipt_attachment_prompt: str | None = Field(None, description="Prompt for receipt attachment")
 
 
 class ClarificationRequest(BaseModel):
@@ -75,33 +79,33 @@ async def process_natural_language(
             company_id=str(request.company_id),
             text_length=len(request.text)
         )
-        
+
         # Process the natural language input
         result = await nl_service.process_natural_language_input(
             user_input=request.text,
             company_id=request.company_id,
             user_id=current_user.user_id
         )
-        
+
         # Extract components
         proposal = result["proposal"]
         feedback = result["feedback"]
         receipt_doc = result["receipt_doc"]
         intent = result["intent"]
-        
+
         # If GREEN, create the booking immediately
         booking_id = None
         if proposal.stoplight.value == "GREEN":
             try:
                 # Get booking service
                 from src.app.dependencies import get_booking_service
-                from src.repositories.database import DatabaseRepository
                 from src.infra.config import get_settings
-                
+                from src.repositories.database import DatabaseRepository
+
                 settings = get_settings()
                 repository = DatabaseRepository(settings.database_url)
                 booking_service = get_booking_service(repository)
-                
+
                 # Create journal entry
                 journal_entry = await booking_service.create_journal_entry(
                     company_id=request.company_id,
@@ -110,15 +114,15 @@ async def process_natural_language(
                     intent=intent,
                     created_by=current_user.user_id
                 )
-                
+
                 booking_id = str(journal_entry.id)
                 logger.info("Booking created successfully", booking_id=booking_id)
-                
+
             except Exception as e:
                 logger.error("Failed to create booking", error=str(e))
                 # Don't fail the entire request, just note that booking creation failed
                 feedback["message"] += " (Note: Booking creation failed, please try again)"
-        
+
         return NaturalLanguageResponse(
             success=True,
             message=feedback["message"],
@@ -129,7 +133,7 @@ async def process_natural_language(
             policy_used=feedback["policy_used"],
             receipt_attachment_prompt=feedback["receipt_attachment_prompt"]
         )
-        
+
     except Exception as e:
         logger.error("Failed to process natural language input", error=str(e))
         raise HTTPException(
@@ -142,7 +146,7 @@ async def process_natural_language(
 async def process_natural_language_with_receipt(
     text: str = Form(..., description="Natural language description of the expense"),
     company_id: UUID = Form(..., description="Company ID"),
-    file: Optional[UploadFile] = File(None, description="Optional receipt file"),
+    file: UploadFile | None = File(None, description="Optional receipt file"),
     current_user: CurrentUser = Depends(get_current_user),
     nl_service: NaturalLanguageService = Depends(get_natural_language_service),
     document_service: DocumentService = Depends(get_document_service),
@@ -166,15 +170,15 @@ async def process_natural_language_with_receipt(
             has_file=file is not None,
             filename=file.filename if file else None
         )
-        
+
         # Create a receipt document if file is provided
         receipt_doc = None
         document_id = None
-        
+
         if file:
             # Read file content
             file_content = await file.read()
-            
+
             # Determine content type with fallback
             content_type = file.content_type or "application/octet-stream"
             if not content_type and file.filename:
@@ -189,7 +193,7 @@ async def process_natural_language_with_receipt(
                     content_type = "application/pdf"
                 else:
                     content_type = "application/octet-stream"
-            
+
             # Upload document
             document = await document_service.upload_document(
                 company_id=company_id,
@@ -199,17 +203,17 @@ async def process_natural_language_with_receipt(
                 uploaded_by=current_user.user_id
             )
             document_id = str(document.id)
-            
+
             # Extract receipt data from the uploaded file
             receipt_doc = await extraction_service.extract_receipt(file_content, content_type)
-            
+
             logger.info(
                 "Receipt uploaded and processed",
                 document_id=document_id,
                 filename=file.filename,
                 total=float(receipt_doc.total) if receipt_doc.total else None
             )
-        
+
         # Process the natural language input
         if receipt_doc:
             # If we have a receipt from file upload, use it directly
@@ -218,7 +222,7 @@ async def process_natural_language_with_receipt(
             intent = await nl_service._detect_intent_from_text(text, receipt_doc)
             proposal = await nl_service._create_posting_proposal(intent, receipt_doc)
             feedback = nl_service._generate_user_feedback(proposal, receipt_doc, intent)
-            
+
             result = {
                 "parsed_data": parsed_data,
                 "receipt_doc": receipt_doc,
@@ -234,24 +238,24 @@ async def process_natural_language_with_receipt(
                 user_input=text,
                 company_id=company_id
             )
-        
+
         feedback = result["feedback"]
         proposal = result["proposal"]
         intent = result["intent"]
-        
+
         # If GREEN, create the booking immediately
         booking_id = None
         if proposal.stoplight.value == "GREEN":
             try:
                 # Get booking service
                 from src.app.dependencies import get_booking_service
-                from src.repositories.database import DatabaseRepository
                 from src.infra.config import get_settings
-                
+                from src.repositories.database import DatabaseRepository
+
                 settings = get_settings()
                 repository = DatabaseRepository(settings.database_url)
                 booking_service = get_booking_service(repository)
-                
+
                 # Create journal entry
                 journal_entry = await booking_service.create_journal_entry(
                     company_id=company_id,
@@ -260,20 +264,20 @@ async def process_natural_language_with_receipt(
                     intent=intent,
                     created_by=current_user.user_id
                 )
-                
+
                 booking_id = str(journal_entry.id)
                 logger.info("Booking created successfully", booking_id=booking_id)
-                
+
             except Exception as e:
                 logger.error("Failed to create booking", error=str(e))
                 # Don't fail the entire request, just note that booking creation failed
                 feedback["message"] += " (Note: Booking creation failed, please try again)"
-        
+
         # Update the response to indicate receipt was already attached if provided
         if file:
             feedback["receipt_attachment_prompt"] = None  # No need to ask since receipt is already attached
             feedback["message"] += f" Receipt '{file.filename}' has been attached to this booking."
-        
+
         return NaturalLanguageResponse(
             success=True,
             message=feedback["message"],
@@ -284,7 +288,7 @@ async def process_natural_language_with_receipt(
             policy_used=feedback["policy_used"],
             receipt_attachment_prompt=feedback["receipt_attachment_prompt"]
         )
-        
+
     except Exception as e:
         logger.error("Failed to process natural language input with receipt", error=str(e))
         raise HTTPException(
@@ -308,7 +312,7 @@ async def provide_clarification(
             user_id=str(current_user.user_id),
             booking_id=request.booking_id
         )
-        
+
         # This would need to be implemented to handle clarification
         # For now, return a placeholder response
         return NaturalLanguageResponse(
@@ -317,7 +321,7 @@ async def provide_clarification(
             status="YELLOW",
             reason_codes=["Feature not implemented"]
         )
-        
+
     except Exception as e:
         logger.error("Failed to process clarification", error=str(e))
         raise HTTPException(
@@ -372,10 +376,10 @@ async def attach_receipt_to_booking(
             company_id=str(company_id),
             filename=file.filename
         )
-        
+
         # Read file content
         file_content = await file.read()
-        
+
         # Determine content type with fallback
         content_type = file.content_type or "application/octet-stream"
         if not content_type and file.filename:
@@ -390,7 +394,7 @@ async def attach_receipt_to_booking(
                 content_type = "application/pdf"
             else:
                 content_type = "application/octet-stream"
-        
+
         # Upload document
         document = await document_service.upload_document(
             company_id=company_id,
@@ -399,18 +403,18 @@ async def attach_receipt_to_booking(
             file_content=file_content,
             uploaded_by=current_user.user_id
         )
-        
+
         # TODO: Link document to booking in database
         # This would require adding a document_id field to the JournalEntry model
         # and updating the booking service to handle the relationship
-        
+
         logger.info(
             "Receipt attached successfully",
             booking_id=booking_id,
             document_id=str(document.id),
             filename=file.filename
         )
-        
+
         return {
             "success": True,
             "message": f"Receipt '{file.filename}' attached to booking {booking_id}",
@@ -420,7 +424,7 @@ async def attach_receipt_to_booking(
             "content_type": content_type,
             "size": len(file_content)
         }
-        
+
     except Exception as e:
         logger.error("Receipt attachment failed", error=str(e), booking_id=booking_id)
         raise HTTPException(status_code=500, detail=f"Failed to attach receipt: {str(e)}")

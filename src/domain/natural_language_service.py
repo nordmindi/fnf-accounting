@@ -3,17 +3,16 @@
 import re
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Any
 from uuid import UUID
 
 from src.domain.models import (
     Currency,
     Intent,
-    ReceiptDoc,
-    VATLine,
-    StoplightDecision,
     PostingProposal,
-    PostingLine,
+    ReceiptDoc,
+    StoplightDecision,
+    VATLine,
 )
 
 
@@ -25,33 +24,33 @@ class NaturalLanguageService:
         self.rule_engine = rule_engine
 
     async def process_natural_language_input(
-        self, 
-        user_input: str, 
+        self,
+        user_input: str,
         company_id: UUID,
-        user_id: Optional[UUID] = None
-    ) -> Dict[str, Any]:
+        user_id: UUID | None = None
+    ) -> dict[str, Any]:
         """
         Process natural language input and create a booking.
         
         Example input: "Business lunch today with the project manager of Example AB 
         at Example restaurant, total amount 1500 SEK, paid with company credit card"
         """
-        
+
         # Step 1: Parse the natural language input
         parsed_data = await self._parse_natural_language(user_input)
-        
+
         # Step 2: Create a ReceiptDoc from parsed data
         receipt_doc = self._create_receipt_doc(parsed_data)
-        
+
         # Step 3: Detect intent using LLM
         intent = await self._detect_intent_from_text(user_input, receipt_doc)
-        
+
         # Step 4: Create posting proposal using rule engine
         proposal = await self._create_posting_proposal(intent, receipt_doc)
-        
+
         # Step 5: Generate user feedback
         feedback = self._generate_user_feedback(proposal, receipt_doc, intent)
-        
+
         return {
             "parsed_data": parsed_data,
             "receipt_doc": receipt_doc,
@@ -62,9 +61,9 @@ class NaturalLanguageService:
             "user_id": user_id
         }
 
-    async def _parse_natural_language(self, user_input: str) -> Dict[str, Any]:
+    async def _parse_natural_language(self, user_input: str) -> dict[str, Any]:
         """Parse natural language input to extract structured data."""
-        
+
         # Use LLM to parse the input
         prompt = f"""
         Parse this natural language input about a business expense and extract structured information.
@@ -97,7 +96,7 @@ class NaturalLanguageService:
             "location": null
         }}
         """
-        
+
         try:
             response = await self.llm.client.chat.completions.create(
                 model=self.llm.model,
@@ -114,49 +113,49 @@ class NaturalLanguageService:
                 temperature=0.1,
                 response_format={"type": "json_object"}
             )
-            
+
             result = self.llm._validate_intent_result(
                 {"slots": {}}  # We'll handle the parsing result differently
             )
-            
+
             import json
             parsed = json.loads(response.choices[0].message.content)
             return self._validate_parsed_data(parsed)
-            
-        except Exception as e:
+
+        except Exception:
             # Fallback to rule-based parsing
             return self._fallback_parse(user_input)
 
-    def _validate_parsed_data(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_parsed_data(self, data: dict[str, Any]) -> dict[str, Any]:
         """Validate and clean parsed data."""
-        
+
         # Ensure required fields
         if "amount" not in data:
             data["amount"] = 0.0
-        
+
         if "currency" not in data:
             data["currency"] = "SEK"
-        
+
         if "date" not in data:
             data["date"] = date.today().isoformat()
-        
+
         if "vendor" not in data:
             data["vendor"] = "Unknown vendor"
-        
+
         if "purpose" not in data:
             data["purpose"] = "Business expense"
-        
+
         # Validate currency
         valid_currencies = ["SEK", "NOK", "DKK", "EUR", "USD"]
         if data["currency"] not in valid_currencies:
             data["currency"] = "SEK"
-        
+
         # Validate amount
         try:
             data["amount"] = float(data["amount"])
         except (ValueError, TypeError):
             data["amount"] = 0.0
-        
+
         # Validate attendees count
         if "attendees_count" in data:
             try:
@@ -165,22 +164,22 @@ class NaturalLanguageService:
                 data["attendees_count"] = 1
         else:
             data["attendees_count"] = 1
-        
+
         return data
 
-    def _fallback_parse(self, user_input: str) -> Dict[str, Any]:
+    def _fallback_parse(self, user_input: str) -> dict[str, Any]:
         """Fallback rule-based parsing."""
-        
+
         # Extract amount and currency using regex
         amount_match = re.search(r'(\d+(?:\.\d{2})?)\s*(SEK|NOK|DKK|EUR|USD)?', user_input, re.IGNORECASE)
         amount = 0.0
         currency = "SEK"
-        
+
         if amount_match:
             amount = float(amount_match.group(1))
             if amount_match.group(2):
                 currency = amount_match.group(2).upper()
-        
+
         # Extract vendor (look for various patterns)
         vendor = "Unknown vendor"
         vendor_patterns = [
@@ -193,24 +192,24 @@ class NaturalLanguageService:
             r'köpt.*?från\s+([^,]+?)(?:\s+på|,|$)',
             r'bought.*?from\s+([^,]+?)(?:\s+for|,|$)'
         ]
-        
+
         for pattern in vendor_patterns:
             match = re.search(pattern, user_input, re.IGNORECASE)
             if match:
                 vendor = match.group(1).strip()
                 break
-        
+
         # Extract client (look for "of" or "with")
         client = None
         client_match = re.search(r'(?:with|of)\s+([^,]+?)(?:\s+at|,|$)', user_input, re.IGNORECASE)
         if client_match:
             client = client_match.group(1).strip()
-        
+
         # Determine purpose and extract additional info
         purpose = "Business expense"
         installment_months = None
         device_type = None
-        
+
         if "lunch" in user_input.lower():
             purpose = "Business lunch"
         elif "dinner" in user_input.lower():
@@ -220,12 +219,12 @@ class NaturalLanguageService:
         elif any(word in user_input.lower() for word in ["mobil", "mobile", "telefon", "phone"]):
             purpose = "Mobile phone purchase"
             device_type = "mobile phone"
-            
+
             # Extract installment months
             installment_match = re.search(r'(\d+)\s*(?:månader|months?)', user_input, re.IGNORECASE)
             if installment_match:
                 installment_months = int(installment_match.group(1))
-        
+
         return {
             "amount": amount,
             "currency": currency,
@@ -242,23 +241,23 @@ class NaturalLanguageService:
             "total_amount": amount
         }
 
-    def _create_receipt_doc(self, parsed_data: Dict[str, Any]) -> ReceiptDoc:
+    def _create_receipt_doc(self, parsed_data: dict[str, Any]) -> ReceiptDoc:
         """Create a ReceiptDoc from parsed data."""
-        
+
         amount = Decimal(str(parsed_data["amount"]))
         currency = Currency(parsed_data["currency"])
-        
+
         # Calculate VAT (assume 25% for now, will be refined by rule engine)
         vat_rate = Decimal("0.25")
         vat_amount = amount * vat_rate / (Decimal("1") + vat_rate)
         base_amount = amount - vat_amount
-        
+
         vat_line = VATLine(
             rate=vat_rate,
             amount=vat_amount,
             base_amount=base_amount
         )
-        
+
         return ReceiptDoc(
             total=amount,
             currency=currency,
@@ -271,7 +270,7 @@ class NaturalLanguageService:
 
     async def _detect_intent_from_text(self, user_input: str, receipt_doc: ReceiptDoc) -> Intent:
         """Detect intent from natural language input."""
-        
+
         # Use existing NLU service logic
         context = {
             "receipt": {
@@ -283,7 +282,7 @@ class NaturalLanguageService:
             },
             "user_text": user_input
         }
-        
+
         try:
             intent_result = await self.llm.detect_intent(context)
             # If LLM returns other_business with low confidence, try fallback
@@ -294,18 +293,18 @@ class NaturalLanguageService:
         except Exception:
             # Fallback to rule-based intent detection
             intent_result = self._fallback_intent_detection(user_input, receipt_doc)
-        
+
         return Intent(
             name=intent_result["intent"],
             confidence=intent_result["confidence"],
             slots=intent_result["slots"]
         )
-    
-    def _fallback_intent_detection(self, user_input: str, receipt_doc: ReceiptDoc) -> Dict[str, Any]:
+
+    def _fallback_intent_detection(self, user_input: str, receipt_doc: ReceiptDoc) -> dict[str, Any]:
         """Fallback intent detection using rule-based approach."""
-        
+
         user_lower = user_input.lower()
-        
+
         # Check for mobile phone purchase
         if any(word in user_lower for word in ["mobil", "mobile", "telefon", "phone"]):
             return {
@@ -317,7 +316,7 @@ class NaturalLanguageService:
                     "device_type": "mobile phone"
                 }
             }
-        
+
         # Check for representation meal
         elif any(word in user_lower for word in ["lunch", "dinner", "meal", "måltid", "lunch"]):
             return {
@@ -328,7 +327,7 @@ class NaturalLanguageService:
                     "purpose": "Business meal"
                 }
             }
-        
+
         # Check for computer purchase
         elif any(word in user_lower for word in ["dator", "computer", "laptop", "pc", "it-utrustning"]):
             return {
@@ -339,7 +338,7 @@ class NaturalLanguageService:
                     "device_type": "computer"
                 }
             }
-        
+
         # Check for office supplies
         elif any(word in user_lower for word in ["kontorsmaterial", "office supplies", "papper", "penna", "material"]):
             return {
@@ -349,7 +348,7 @@ class NaturalLanguageService:
                     "purpose": "Office supplies"
                 }
             }
-        
+
         # Check for consulting services
         elif any(word in user_lower for word in ["konsult", "consulting", "rådgivning", "tjänst"]):
             return {
@@ -359,7 +358,7 @@ class NaturalLanguageService:
                     "service_period": "monthly"
                 }
             }
-        
+
         # Check for employee expense
         elif any(word in user_lower for word in ["utlägg", "anställd", "employee", "privat kort"]):
             return {
@@ -369,7 +368,7 @@ class NaturalLanguageService:
                     "employee_name": "Unknown employee"
                 }
             }
-        
+
         # Check for leasing
         elif any(word in user_lower for word in ["leasing", "kopiator", "hyra", "rental"]):
             return {
@@ -380,7 +379,7 @@ class NaturalLanguageService:
                     "equipment_type": "equipment"
                 }
             }
-        
+
         # Check for SaaS subscription
         elif any(word in user_lower for word in ["subscription", "saas", "cloud", "software", "prenumeration"]):
             return {
@@ -390,7 +389,7 @@ class NaturalLanguageService:
                     "service_period": "monthly"
                 }
             }
-        
+
         # Default to other business
         else:
             return {
@@ -398,13 +397,13 @@ class NaturalLanguageService:
                 "confidence": 0.6,
                 "slots": {}
             }
-    
+
     def _extract_installment_months(self, user_input: str) -> int:
         """Extract installment months from user input."""
         import re
         match = re.search(r'(\d+)\s*(?:månader|months?)', user_input, re.IGNORECASE)
         return int(match.group(1)) if match else 1
-    
+
     def _extract_attendees_count(self, user_input: str) -> int:
         """Extract attendees count from user input."""
         import re
@@ -413,10 +412,10 @@ class NaturalLanguageService:
 
     async def _create_posting_proposal(self, intent: Intent, receipt_doc: ReceiptDoc) -> PostingProposal:
         """Create posting proposal using rule engine."""
-        
+
         # Find matching policies
         policy_matches = self.rule_engine.find_matching_policies(intent, receipt_doc)
-        
+
         if not policy_matches:
             return PostingProposal(
                 lines=[],
@@ -426,14 +425,14 @@ class NaturalLanguageService:
                 stoplight=StoplightDecision.RED,
                 policy_id=None
             )
-        
+
         # Use the best matching policy
         best_match = policy_matches[0]
         return self.rule_engine.create_posting_proposal(best_match, intent, receipt_doc)
 
-    def _generate_user_feedback(self, proposal: PostingProposal, receipt_doc: ReceiptDoc, intent: Intent) -> Dict[str, Any]:
+    def _generate_user_feedback(self, proposal: PostingProposal, receipt_doc: ReceiptDoc, intent: Intent) -> dict[str, Any]:
         """Generate user feedback about the booking."""
-        
+
         feedback = {
             "status": proposal.stoplight.value,
             "message": "",
@@ -449,7 +448,7 @@ class NaturalLanguageService:
             "policy_used": proposal.policy_id,
             "receipt_attachment_prompt": "Would you like to attach a receipt for this booking?"
         }
-        
+
         # Organize posting lines by debit/credit
         for line in proposal.lines:
             line_info = {
@@ -457,12 +456,12 @@ class NaturalLanguageService:
                 "amount": float(line.amount),
                 "description": line.description or ""
             }
-            
+
             if line.side == "D":
                 feedback["booking_details"]["debit_accounts"].append(line_info)
             else:
                 feedback["booking_details"]["credit_accounts"].append(line_info)
-        
+
         # VAT details
         if proposal.vat_code:
             vat_info = {
@@ -474,11 +473,11 @@ class NaturalLanguageService:
             if proposal.report_boxes:
                 vat_info["report_boxes"] = proposal.report_boxes
             feedback["booking_details"]["vat_details"] = vat_info
-        
+
         # Calculate deductible breakdown for representation meals
         if intent.name == "representation_meal" and proposal.vat_mode == "standard":
             self._add_deductible_breakdown(feedback, proposal, receipt_doc, intent)
-        
+
         # Generate status message
         if proposal.stoplight == StoplightDecision.GREEN:
             feedback["message"] = f"✅ Booking created successfully! {intent.name.replace('_', ' ').title()} expense of {receipt_doc.total} {receipt_doc.currency.value} has been automatically booked."
@@ -486,17 +485,17 @@ class NaturalLanguageService:
             feedback["message"] = f"⚠️ Booking requires clarification. Please provide additional information to complete the {intent.name.replace('_', ' ').title()} expense booking."
         else:
             feedback["message"] = f"❌ Manual review required. The {intent.name.replace('_', ' ').title()} expense could not be automatically processed."
-        
+
         return feedback
-    
-    def _add_deductible_breakdown(self, feedback: Dict[str, Any], proposal: PostingProposal, receipt_doc: ReceiptDoc, intent: Intent) -> None:
+
+    def _add_deductible_breakdown(self, feedback: dict[str, Any], proposal: PostingProposal, receipt_doc: ReceiptDoc, intent: Intent) -> None:
         """Add deductible vs non-deductible breakdown for representation meals."""
-        
+
         # Find deductible and non-deductible amounts from posting lines
         deductible_net = 0.0
         non_deductible_net = 0.0
         vat_deductible = 0.0
-        
+
         for line in proposal.lines:
             if line.account == "6071":  # Representation, avdragsgill
                 deductible_net = float(line.amount)
@@ -504,11 +503,11 @@ class NaturalLanguageService:
                 non_deductible_net = float(line.amount)
             elif line.account == "2641":  # Ingående moms, avdragsgill
                 vat_deductible = float(line.amount)
-        
+
         attendees_count = intent.slots.get("attendees_count", 1)
         max_deductible_per_person = 300.0
         max_deductible_total = max_deductible_per_person * attendees_count
-        
+
         feedback["booking_details"]["deductible_breakdown"] = {
             "max_deductible_per_person_sek": max_deductible_per_person,
             "attendees_count": attendees_count,

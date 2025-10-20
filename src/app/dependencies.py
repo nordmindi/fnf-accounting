@@ -18,21 +18,19 @@ from src.domain.services import (
     ReasonService,
     StoplightService,
 )
-from src.app.simple_services import SimpleDocumentService, SimplePolicyService, SimpleBookingService
-from src.app.booking_service_factory import BookingServiceFactory
 from src.infra.config import get_settings
 from src.repositories.database import DatabaseRepository
 from src.rules.engine import RuleEngine
 
 
-@lru_cache()
+@lru_cache
 def get_database_repository():
     """Get database repository instance."""
     settings = get_settings()
     return DatabaseRepository(settings.database_url)
 
 
-@lru_cache()
+@lru_cache
 def get_storage_adapter():
     """Get storage adapter instance."""
     settings = get_settings()
@@ -46,7 +44,7 @@ def get_storage_adapter():
     return StorageAdapter(config)
 
 
-@lru_cache()
+@lru_cache
 def get_ocr_adapter():
     """Get OCR adapter instance."""
     config = {
@@ -58,7 +56,7 @@ def get_ocr_adapter():
     return OCRAdapter(config)
 
 
-@lru_cache()
+@lru_cache
 def get_llm_adapter():
     """Get LLM adapter instance."""
     settings = get_settings()
@@ -70,7 +68,7 @@ def get_llm_adapter():
     return LLMAdapter(config)
 
 
-@lru_cache()
+@lru_cache
 def get_rule_engine():
     """Get rule engine instance."""
     # Load policies from files
@@ -78,17 +76,17 @@ def get_rule_engine():
     try:
         import json
         import os
-        
+
         policies_dir = "src/rules/policies"
         if os.path.exists(policies_dir):
             for filename in os.listdir(policies_dir):
                 if filename.endswith(".json"):
-                    with open(os.path.join(policies_dir, filename), "r") as f:
+                    with open(os.path.join(policies_dir, filename)) as f:
                         policy = json.load(f)
                         policies.append(policy)
     except Exception as e:
         print(f"Warning: Could not load policies: {e}")
-    
+
     return RuleEngine(policies)
 
 

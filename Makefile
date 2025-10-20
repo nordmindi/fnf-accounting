@@ -118,3 +118,6 @@ worker: ## Run Celery worker
 dev: up setup-db run ## Start development environment
 
 ci: lint test ## Run CI pipeline locally
+
+ci-local: ## Run full CI pipeline locally with detailed output
+	./scripts/test-ci-locally.sh

@@ -2,16 +2,25 @@
 
 import json
 from datetime import date, datetime
-from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import create_engine, Column, String, Integer, DateTime, Date, Text, Boolean, ForeignKey, Numeric
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
-from sqlalchemy.dialects.postgresql import UUID as PostgresUUID, JSONB, ARRAY
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import relationship
 
-from src.domain.models import Document, JournalEntry, JournalLine, PipelineRun, Policy
+from src.domain.models import Document, JournalEntry, JournalLine, PipelineRun
 from src.rules.bas_dataset import BASAccount
 
 Base = declarative_base()
@@ -20,7 +29,7 @@ Base = declarative_base()
 class DocumentModel(Base):
     """Document database model."""
     __tablename__ = "documents"
-    
+
     id = Column(PostgresUUID(as_uuid=True), primary_key=True)
     company_id = Column(PostgresUUID(as_uuid=True), nullable=False)
     filename = Column(String(255), nullable=False)
@@ -35,7 +44,7 @@ class DocumentModel(Base):
 class JournalEntryModel(Base):
     """Journal entry database model."""
     __tablename__ = "journal_entries"
-    
+
     id = Column(PostgresUUID(as_uuid=True), primary_key=True)
     company_id = Column(PostgresUUID(as_uuid=True), nullable=False)
     date = Column(Date, nullable=False)
@@ -44,7 +53,7 @@ class JournalEntryModel(Base):
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(PostgresUUID(as_uuid=True))
-    
+
     # Relationships
     lines = relationship("JournalLineModel", back_populates="entry")
 
@@ -52,7 +61,7 @@ class JournalEntryModel(Base):
 class JournalLineModel(Base):
     """Journal line database model."""
     __tablename__ = "journal_lines"
-    
+
     id = Column(PostgresUUID(as_uuid=True), primary_key=True)
     entry_id = Column(PostgresUUID(as_uuid=True), ForeignKey("journal_entries.id"), nullable=False)
     account = Column(String(20), nullable=False)
@@ -62,7 +71,7 @@ class JournalLineModel(Base):
     dimension_cost_center = Column(String(50))
     description = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     entry = relationship("JournalEntryModel", back_populates="lines")
 
@@ -70,7 +79,7 @@ class JournalLineModel(Base):
 class PipelineRunModel(Base):
     """Pipeline run database model."""
     __tablename__ = "pipeline_runs"
-    
+
     id = Column(PostgresUUID(as_uuid=True), primary_key=True)
     document_id = Column(PostgresUUID(as_uuid=True), ForeignKey("documents.id"), nullable=False)
     company_id = Column(PostgresUUID(as_uuid=True), nullable=False)
@@ -89,7 +98,7 @@ class PipelineRunModel(Base):
 class PolicyModel(Base):
     """Policy database model."""
     __tablename__ = "policies"
-    
+
     id = Column(String(50), primary_key=True)
     version = Column(String(20), nullable=False)
     country = Column(String(2), nullable=False)
@@ -105,7 +114,7 @@ class PolicyModel(Base):
 class BASAccountModel(Base):
     """BAS account database model."""
     __tablename__ = "bas_accounts"
-    
+
     number = Column(String(10), primary_key=True)
     name = Column(String(200), nullable=False)
     account_class = Column(String(10), nullable=False)
@@ -120,25 +129,25 @@ class BASAccountModel(Base):
 
 class DatabaseRepository:
     """Database repository for data access."""
-    
+
     def __init__(self, database_url: str):
         # Convert sync URL to async URL
         if database_url.startswith("postgresql://"):
             async_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
         else:
             async_url = database_url
-        
+
         self.engine = create_async_engine(async_url)
         self.SessionLocal = async_sessionmaker(
-            self.engine, 
-            class_=AsyncSession, 
+            self.engine,
+            class_=AsyncSession,
             expire_on_commit=False
         )
-    
+
     async def get_session(self) -> AsyncSession:
         """Get database session."""
         return self.SessionLocal()
-    
+
     # Document methods
     async def save_document(self, document: Document) -> Document:
         """Save document to database."""
@@ -161,8 +170,8 @@ class DatabaseRepository:
             return document
         finally:
             await session.close()
-    
-    async def get_document(self, document_id: UUID) -> Optional[Document]:
+
+    async def get_document(self, document_id: UUID) -> Document | None:
         """Get document by ID."""
         session = await self.get_session()
         try:
@@ -171,10 +180,10 @@ class DatabaseRepository:
                 select(DocumentModel).filter(DocumentModel.id == document_id)
             )
             db_document = result.scalar_one_or_none()
-            
+
             if not db_document:
                 return None
-            
+
             return Document(
                 id=db_document.id,
                 company_id=db_document.company_id,
@@ -188,8 +197,8 @@ class DatabaseRepository:
             )
         finally:
             await session.close()
-    
-    async def find_document_by_hash(self, file_hash: str) -> Optional[Document]:
+
+    async def find_document_by_hash(self, file_hash: str) -> Document | None:
         """Find document by file hash."""
         session = await self.get_session()
         try:
@@ -198,10 +207,10 @@ class DatabaseRepository:
                 select(DocumentModel).filter(DocumentModel.hash == file_hash)
             )
             db_document = result.scalar_one_or_none()
-            
+
             if not db_document:
                 return None
-            
+
             return Document(
                 id=db_document.id,
                 company_id=db_document.company_id,
@@ -215,8 +224,8 @@ class DatabaseRepository:
             )
         finally:
             await session.close()
-    
-    async def list_documents(self, company_id: UUID, limit: int = 50, offset: int = 0) -> List[Document]:
+
+    async def list_documents(self, company_id: UUID, limit: int = 50, offset: int = 0) -> list[Document]:
         """List documents for a company with pagination."""
         session = await self.get_session()
         try:
@@ -229,7 +238,7 @@ class DatabaseRepository:
                 .offset(offset)
             )
             db_documents = result.scalars().all()
-            
+
             documents = []
             for db_document in db_documents:
                 document = Document(
@@ -244,13 +253,13 @@ class DatabaseRepository:
                     uploaded_by=db_document.uploaded_by
                 )
                 documents.append(document)
-            
+
             return documents
         finally:
             await session.close()
-    
+
     # Journal entry methods
-    async def save_journal_entry(self, entry: JournalEntry, lines: List[JournalLine]) -> JournalEntry:
+    async def save_journal_entry(self, entry: JournalEntry, lines: list[JournalLine]) -> JournalEntry:
         """Save journal entry and lines."""
         session = await self.get_session()
         try:
@@ -266,7 +275,7 @@ class DatabaseRepository:
                 created_by=entry.created_by
             )
             session.add(db_entry)
-            
+
             # Save lines
             for line in lines:
                 db_line = JournalLineModel(
@@ -281,13 +290,13 @@ class DatabaseRepository:
                     created_at=line.created_at
                 )
                 session.add(db_line)
-            
+
             await session.commit()
             return entry
         finally:
             await session.close()
-    
-    async def get_last_journal_number(self, company_id: UUID, series: str) -> Optional[str]:
+
+    async def get_last_journal_number(self, company_id: UUID, series: str) -> str | None:
         """Get last journal number for series."""
         session = await self.get_session()
         try:
@@ -299,12 +308,12 @@ class DatabaseRepository:
                 ).order_by(JournalEntryModel.number.desc()).limit(1)
             )
             db_entry = result.scalar_one_or_none()
-            
+
             return db_entry.number if db_entry else None
         finally:
             await session.close()
-    
-    async def get_journal_entry(self, entry_id: UUID) -> Optional[JournalEntry]:
+
+    async def get_journal_entry(self, entry_id: UUID) -> JournalEntry | None:
         """Get journal entry by ID."""
         session = await self.get_session()
         try:
@@ -313,16 +322,16 @@ class DatabaseRepository:
                 select(JournalEntryModel).filter(JournalEntryModel.id == entry_id)
             )
             db_entry = result.scalar_one_or_none()
-            
+
             if not db_entry:
                 return None
-            
+
             # Get journal lines
             lines_result = await session.execute(
                 select(JournalLineModel).filter(JournalLineModel.entry_id == entry_id)
             )
             db_lines = lines_result.scalars().all()
-            
+
             lines = []
             for db_line in db_lines:
                 line = JournalLine(
@@ -337,7 +346,7 @@ class DatabaseRepository:
                     created_at=db_line.created_at
                 )
                 lines.append(line)
-            
+
             entry = JournalEntry(
                 id=db_entry.id,
                 company_id=db_entry.company_id,
@@ -349,12 +358,12 @@ class DatabaseRepository:
                 created_by=db_entry.created_by,
                 lines=lines
             )
-            
+
             return entry
         finally:
             await session.close()
-    
-    async def list_journal_entries(self, company_id: UUID, limit: int = 50, offset: int = 0) -> List[JournalEntry]:
+
+    async def list_journal_entries(self, company_id: UUID, limit: int = 50, offset: int = 0) -> list[JournalEntry]:
         """List journal entries for a company with pagination."""
         session = await self.get_session()
         try:
@@ -367,7 +376,7 @@ class DatabaseRepository:
                 .offset(offset)
             )
             db_entries = result.scalars().all()
-            
+
             entries = []
             for db_entry in db_entries:
                 # Get journal lines for this entry
@@ -375,7 +384,7 @@ class DatabaseRepository:
                     select(JournalLineModel).filter(JournalLineModel.entry_id == db_entry.id)
                 )
                 db_lines = lines_result.scalars().all()
-                
+
                 lines = []
                 for db_line in db_lines:
                     line = JournalLine(
@@ -390,7 +399,7 @@ class DatabaseRepository:
                         created_at=db_line.created_at
                     )
                     lines.append(line)
-                
+
                 entry = JournalEntry(
                     id=db_entry.id,
                     company_id=db_entry.company_id,
@@ -403,11 +412,11 @@ class DatabaseRepository:
                     lines=lines
                 )
                 entries.append(entry)
-            
+
             return entries
         finally:
             await session.close()
-    
+
     # Pipeline run methods
     async def save_pipeline_run(self, pipeline_run: PipelineRun) -> PipelineRun:
         """Save pipeline run."""
@@ -433,8 +442,8 @@ class DatabaseRepository:
             return pipeline_run
         finally:
             await session.close()
-    
-    async def get_pipeline_run(self, run_id: UUID) -> Optional[PipelineRun]:
+
+    async def get_pipeline_run(self, run_id: UUID) -> PipelineRun | None:
         """Get pipeline run by ID."""
         session = await self.get_session()
         try:
@@ -443,26 +452,26 @@ class DatabaseRepository:
                 select(PipelineRunModel).filter(PipelineRunModel.id == run_id)
             )
             db_run = result.scalar_one_or_none()
-            
+
             if not db_run:
                 return None
-            
+
             # Convert JSONB fields back to models
             receipt_doc = None
             if db_run.receipt_doc:
                 from src.domain.models import ReceiptDoc
                 receipt_doc = ReceiptDoc(**db_run.receipt_doc)
-            
+
             intent = None
             if db_run.intent:
                 from src.domain.models import Intent
                 intent = Intent(**db_run.intent)
-            
+
             proposal = None
             if db_run.proposal:
                 from src.domain.models import PostingProposal
                 proposal = PostingProposal(**db_run.proposal)
-            
+
             return PipelineRun(
                 id=db_run.id,
                 document_id=db_run.document_id,
@@ -480,8 +489,8 @@ class DatabaseRepository:
             )
         finally:
             await session.close()
-    
-    async def list_pipeline_runs(self, company_id: UUID, limit: int = 50, offset: int = 0) -> List[PipelineRun]:
+
+    async def list_pipeline_runs(self, company_id: UUID, limit: int = 50, offset: int = 0) -> list[PipelineRun]:
         """List pipeline runs for a company with pagination."""
         session = await self.get_session()
         try:
@@ -494,7 +503,7 @@ class DatabaseRepository:
                 .offset(offset)
             )
             db_runs = result.scalars().all()
-            
+
             pipeline_runs = []
             for db_run in db_runs:
                 # Convert JSONB fields back to models
@@ -502,17 +511,17 @@ class DatabaseRepository:
                 if db_run.receipt_doc:
                     from src.domain.models import ReceiptDoc
                     receipt_doc = ReceiptDoc(**db_run.receipt_doc)
-                
+
                 intent = None
                 if db_run.intent:
                     from src.domain.models import Intent
                     intent = Intent(**db_run.intent)
-                
+
                 proposal = None
                 if db_run.proposal:
                     from src.domain.models import PostingProposal
                     proposal = PostingProposal(**db_run.proposal)
-                
+
                 pipeline_run = PipelineRun(
                     id=db_run.id,
                     document_id=db_run.document_id,
@@ -529,17 +538,17 @@ class DatabaseRepository:
                     created_at=db_run.created_at
                 )
                 pipeline_runs.append(pipeline_run)
-            
+
             return pipeline_runs
         finally:
             await session.close()
-    
+
     # Policy methods
-    async def get_active_policies(self, country: str) -> List[dict]:
+    async def get_active_policies(self, country: str) -> list[dict]:
         """Get active policies for country."""
         session = await self.get_session()
         try:
-            from sqlalchemy import select, and_, or_
+            from sqlalchemy import and_, or_, select
             today = date.today()
             result = await session.execute(
                 select(PolicyModel).filter(
@@ -554,7 +563,7 @@ class DatabaseRepository:
                 )
             )
             db_policies = result.scalars().all()
-            
+
             return [
                 {
                     "id": policy.id,
@@ -570,8 +579,8 @@ class DatabaseRepository:
             ]
         finally:
             await session.close()
-    
-    async def get_policy(self, policy_id: str) -> Optional[dict]:
+
+    async def get_policy(self, policy_id: str) -> dict | None:
         """Get policy by ID."""
         session = await self.get_session()
         try:
@@ -580,10 +589,10 @@ class DatabaseRepository:
                 select(PolicyModel).filter(PolicyModel.id == policy_id)
             )
             db_policy = result.scalar_one_or_none()
-            
+
             if not db_policy:
                 return None
-            
+
             return {
                 "id": db_policy.id,
                 "version": db_policy.version,
@@ -596,14 +605,13 @@ class DatabaseRepository:
             }
         finally:
             await session.close()
-    
+
     async def create_policy(self, policy_data: dict) -> dict:
         """Create a new policy."""
         session = await self.get_session()
         try:
-            from datetime import datetime, date
-            import json
-            
+            from datetime import date
+
             db_policy = PolicyModel(
                 id=policy_data["id"],
                 version=policy_data["version"],
@@ -617,7 +625,7 @@ class DatabaseRepository:
             session.add(db_policy)
             await session.commit()
             await session.refresh(db_policy)
-            
+
             return {
                 "id": db_policy.id,
                 "version": db_policy.version,
@@ -630,22 +638,23 @@ class DatabaseRepository:
             }
         finally:
             await session.close()
-    
+
     async def update_policy(self, policy_id: str, policy_data: dict) -> dict:
         """Update an existing policy."""
         session = await self.get_session()
         try:
-            from sqlalchemy import select
             from datetime import date
-            
+
+            from sqlalchemy import select
+
             result = await session.execute(
                 select(PolicyModel).filter(PolicyModel.id == policy_id)
             )
             db_policy = result.scalar_one_or_none()
-            
+
             if not db_policy:
                 raise ValueError(f"Policy {policy_id} not found")
-            
+
             # Update fields
             if "version" in policy_data:
                 db_policy.version = policy_data["version"]
@@ -661,10 +670,10 @@ class DatabaseRepository:
                 db_policy.description = policy_data["description"]
             if "rules" in policy_data:
                 db_policy.rules = policy_data["rules"]
-            
+
             await session.commit()
             await session.refresh(db_policy)
-            
+
             return {
                 "id": db_policy.id,
                 "version": db_policy.version,
@@ -677,7 +686,7 @@ class DatabaseRepository:
             }
         finally:
             await session.close()
-    
+
     # BAS account methods
     async def save_bas_account(self, account: BASAccount, bas_version: str = "2025_v1.0") -> BASAccount:
         """Save BAS account to database."""
@@ -699,8 +708,8 @@ class DatabaseRepository:
             return account
         finally:
             await session.close()
-    
-    async def get_bas_account(self, account_number: str) -> Optional[BASAccount]:
+
+    async def get_bas_account(self, account_number: str) -> BASAccount | None:
         """Get BAS account by number."""
         session = await self.get_session()
         try:
@@ -709,10 +718,10 @@ class DatabaseRepository:
                 select(BASAccountModel).filter(BASAccountModel.number == account_number)
             )
             db_account = result.scalar_one_or_none()
-            
+
             if not db_account:
                 return None
-            
+
             return BASAccount(
                 number=db_account.number,
                 name=db_account.name,
@@ -724,19 +733,19 @@ class DatabaseRepository:
             )
         finally:
             await session.close()
-    
+
     async def validate_bas_account(self, account_number: str, region: str = "SE") -> bool:
         """Validate BAS account exists and is allowed for region."""
         account = await self.get_bas_account(account_number)
         if not account:
             return False
-        
+
         if account.allowed_regions and region not in account.allowed_regions:
             return False
-            
+
         return True
-    
-    async def load_bas_accounts_from_dataset(self, accounts: List[BASAccount], bas_version: str = "2025_v1.0") -> None:
+
+    async def load_bas_accounts_from_dataset(self, accounts: list[BASAccount], bas_version: str = "2025_v1.0") -> None:
         """Load BAS accounts from dataset into database."""
         session = await self.get_session()
         try:

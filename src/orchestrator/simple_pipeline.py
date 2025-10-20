@@ -1,27 +1,24 @@
 """Simplified pipeline orchestrator for MVP functionality."""
 
-import asyncio
-from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
-from src.domain.models import PipelineRun, StoplightDecision
+from src.adapters.llm import LLMAdapter
+from src.adapters.ocr import OCRAdapter
+from src.app.booking_service_factory import BookingServiceFactory
+from src.domain.models import StoplightDecision
 from src.domain.services import (
     ExtractionService,
     NLUService,
     ProposalService,
     StoplightService,
-    BookingService,
 )
 from src.rules.engine import RuleEngine
-from src.adapters.ocr import OCRAdapter
-from src.adapters.llm import LLMAdapter
-from src.app.booking_service_factory import BookingServiceFactory
 
 
 class SimplePipelineOrchestrator:
     """Simplified orchestrator for document processing pipeline."""
-    
+
     def __init__(self):
         # Store pipeline results in memory
         self.pipeline_results = {}
@@ -33,52 +30,52 @@ class SimplePipelineOrchestrator:
             }
         }
         self.ocr_adapter = OCRAdapter(ocr_config)
-        
+
         llm_config = {
             "api_key": "dummy-key",  # Will use fallback detection
             "model": "gpt-4",
             "temperature": 0.1,
         }
         self.llm_adapter = LLMAdapter(llm_config)
-        
+
         # Initialize services
         self.extraction_service = ExtractionService(self.ocr_adapter)
         self.nlu_service = NLUService(self.llm_adapter)
-        
+
         # Load policies and initialize rule engine
         self.rule_engine = self._load_rule_engine()
         self.proposal_service = ProposalService(self.rule_engine)
-        
+
         stoplight_config = {
             "confidence_threshold": 0.8,
             "high_value_threshold": 10000,
         }
         self.stoplight_service = StoplightService(stoplight_config)
-        
+
         # Booking service with pipeline integration
         self.booking_service = BookingServiceFactory.create_booking_service()
-    
+
     def _load_rule_engine(self) -> RuleEngine:
         """Load policies and create rule engine."""
         policies = []
         try:
             import json
             import os
-            
+
             policies_dir = "src/rules/policies"
             if os.path.exists(policies_dir):
                 for filename in os.listdir(policies_dir):
                     if filename.endswith(".json"):
-                        with open(os.path.join(policies_dir, filename), "r") as f:
+                        with open(os.path.join(policies_dir, filename)) as f:
                             policy = json.load(f)
                             policies.append(policy)
         except Exception as e:
             print(f"Warning: Could not load policies: {e}")
             # Use default policies
             policies = self._get_default_policies()
-        
+
         return RuleEngine(policies)
-    
+
     def _get_default_policies(self):
         """Get default policies for testing."""
         return [
@@ -175,37 +172,37 @@ class SimplePipelineOrchestrator:
                 }
             }
         ]
-    
+
     async def run_pipeline(
         self,
         file_content: bytes,
         content_type: str,
         company_id: UUID,
-        user_text: Optional[str] = None,
-        user_id: Optional[UUID] = None
+        user_text: str | None = None,
+        user_id: UUID | None = None
     ) -> dict:
         """Run the complete document processing pipeline."""
         pipeline_run_id = uuid4()
-        
+
         try:
             # Step 1: Extract receipt data
             receipt_doc = await self.extraction_service.extract_receipt(
-                file_content, 
+                file_content,
                 content_type
             )
-            
+
             # Step 2: Detect intent
             intent = await self.nlu_service.detect_intent(receipt_doc, user_text)
-            
+
             # Step 3: Create posting proposal
             proposal = await self.proposal_service.create_proposal(intent, receipt_doc)
-            
+
             # Step 4: Make stoplight decision
             final_decision = self.stoplight_service.decide_stoplight(
                 proposal, intent, receipt_doc
             )
             proposal.stoplight = final_decision
-            
+
             # Step 5: Create booking if GREEN
             booking = None
             if final_decision == StoplightDecision.GREEN:
@@ -217,7 +214,7 @@ class SimplePipelineOrchestrator:
                     intent=intent,
                     created_by=user_id
                 )
-            
+
             result = {
                 "pipeline_run_id": pipeline_run_id,
                 "status": "completed",
@@ -261,11 +258,11 @@ class SimplePipelineOrchestrator:
                     "created_at": booking.journal_entry.created_at.isoformat() if booking else None
                 } if booking else None
             }
-            
+
             # Store the result for later retrieval
             self.pipeline_results[str(pipeline_run_id)] = result
             return result
-            
+
         except Exception as e:
             error_result = {
                 "pipeline_run_id": pipeline_run_id,
@@ -276,8 +273,8 @@ class SimplePipelineOrchestrator:
             # Store the error result for later retrieval
             self.pipeline_results[str(pipeline_run_id)] = error_result
             return error_result
-    
-    async def get_pipeline_status(self, run_id: UUID) -> Optional[Dict[str, Any]]:
+
+    async def get_pipeline_status(self, run_id: UUID) -> dict[str, Any] | None:
         """Get pipeline run status from stored results."""
         return self.pipeline_results.get(str(run_id))
 

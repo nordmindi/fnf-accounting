@@ -1,9 +1,10 @@
 """Domain models for Fire & Forget AI Accounting."""
 
-from datetime import date as Date, datetime
+from datetime import date as Date
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -30,7 +31,7 @@ class VATLine(BaseModel):
     rate: Decimal = Field(..., decimal_places=2)
     amount: Decimal = Field(..., decimal_places=2)
     base_amount: Decimal = Field(..., decimal_places=2)
-    
+
     class Config:
         json_encoders = {
             Decimal: str,
@@ -41,12 +42,12 @@ class ReceiptDoc(BaseModel):
     """Normalized receipt document from OCR extraction."""
     total: Decimal = Field(..., decimal_places=2, description="Total amount including VAT")
     currency: Currency = Field(..., description="Currency code")
-    vat_lines: List[VATLine] = Field(default_factory=list, description="VAT breakdown")
-    vendor: Optional[str] = Field(None, description="Vendor name")
+    vat_lines: list[VATLine] = Field(default_factory=list, description="VAT breakdown")
+    vendor: str | None = Field(None, description="Vendor name")
     date: Date = Field(..., description="Receipt date")
-    raw_text: Optional[str] = Field(None, description="Raw OCR text")
+    raw_text: str | None = Field(None, description="Raw OCR text")
     confidence: float = Field(..., ge=0.0, le=1.0, description="OCR confidence score")
-    
+
     class Config:
         json_encoders = {
             Decimal: str,
@@ -58,8 +59,8 @@ class Intent(BaseModel):
     """Intent detection result from NLU service."""
     name: str = Field(..., description="Intent name (e.g., 'representation_meal')")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Intent confidence score")
-    slots: Dict[str, Any] = Field(default_factory=dict, description="Extracted slots")
-    
+    slots: dict[str, Any] = Field(default_factory=dict, description="Extracted slots")
+
     class Config:
         json_encoders = {
             Decimal: str,
@@ -71,10 +72,10 @@ class PostingLine(BaseModel):
     account: str = Field(..., description="Account code")
     side: Literal["D", "K"] = Field(..., description="Debit (D) or Credit (K)")
     amount: Decimal = Field(..., decimal_places=2, description="Amount")
-    dimension_project: Optional[str] = Field(None, description="Project dimension")
-    dimension_cost_center: Optional[str] = Field(None, description="Cost center dimension")
-    description: Optional[str] = Field(None, description="Line description")
-    
+    dimension_project: str | None = Field(None, description="Project dimension")
+    dimension_cost_center: str | None = Field(None, description="Cost center dimension")
+    description: str | None = Field(None, description="Line description")
+
     class Config:
         json_encoders = {
             Decimal: str,
@@ -83,15 +84,15 @@ class PostingLine(BaseModel):
 
 class PostingProposal(BaseModel):
     """Posting proposal from rule engine."""
-    lines: List[PostingLine] = Field(..., description="Journal entry lines")
-    vat_code: Optional[str] = Field(None, description="VAT code")
+    lines: list[PostingLine] = Field(..., description="Journal entry lines")
+    vat_code: str | None = Field(None, description="VAT code")
     confidence: float = Field(..., ge=0.0, le=1.0, description="Proposal confidence")
-    reason_codes: List[str] = Field(default_factory=list, description="Reason codes for decision")
+    reason_codes: list[str] = Field(default_factory=list, description="Reason codes for decision")
     stoplight: StoplightDecision = Field(..., description="Stoplight decision")
-    policy_id: Optional[str] = Field(None, description="Applied policy ID")
-    vat_mode: Optional[str] = Field(None, description="VAT mode: 'reverse_charge' or 'standard'")
-    report_boxes: Optional[Dict[str, str]] = Field(None, description="VAT report boxes mapping")
-    
+    policy_id: str | None = Field(None, description="Applied policy ID")
+    vat_mode: str | None = Field(None, description="VAT mode: 'reverse_charge' or 'standard'")
+    report_boxes: dict[str, str] | None = Field(None, description="VAT report boxes mapping")
+
     class Config:
         json_encoders = {
             Decimal: str,
@@ -105,10 +106,10 @@ class JournalEntry(BaseModel):
     date: Date = Field(..., description="Posting date")
     series: str = Field(..., description="Journal series")
     number: str = Field(..., description="Journal number")
-    notes: Optional[str] = Field(None, description="Entry notes")
+    notes: str | None = Field(None, description="Entry notes")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    created_by: Optional[UUID] = Field(None, description="User who created the entry")
-    
+    created_by: UUID | None = Field(None, description="User who created the entry")
+
     class Config:
         json_encoders = {
             UUID: str,
@@ -124,11 +125,11 @@ class JournalLine(BaseModel):
     account: str = Field(..., description="Account code")
     side: Literal["D", "K"] = Field(..., description="Debit (D) or Credit (K)")
     amount: Decimal = Field(..., decimal_places=2, description="Amount")
-    dimension_project: Optional[str] = Field(None, description="Project dimension")
-    dimension_cost_center: Optional[str] = Field(None, description="Cost center dimension")
-    description: Optional[str] = Field(None, description="Line description")
+    dimension_project: str | None = Field(None, description="Project dimension")
+    dimension_cost_center: str | None = Field(None, description="Cost center dimension")
+    description: str | None = Field(None, description="Line description")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    
+
     class Config:
         json_encoders = {
             UUID: str,
@@ -147,8 +148,8 @@ class Document(BaseModel):
     storage_key: str = Field(..., description="Storage key in S3/MinIO")
     hash: str = Field(..., description="File hash for deduplication")
     uploaded_at: datetime = Field(default_factory=datetime.utcnow, description="Upload timestamp")
-    uploaded_by: Optional[UUID] = Field(None, description="User who uploaded the file")
-    
+    uploaded_by: UUID | None = Field(None, description="User who uploaded the file")
+
     class Config:
         json_encoders = {
             UUID: str,
@@ -164,16 +165,16 @@ class PipelineRun(BaseModel):
     status: Literal["pending", "running", "completed", "failed"] = Field(
         default="pending", description="Pipeline status"
     )
-    current_step: Optional[str] = Field(None, description="Current pipeline step")
-    receipt_doc: Optional[ReceiptDoc] = Field(None, description="Extracted receipt data")
-    intent: Optional[Intent] = Field(None, description="Detected intent")
-    proposal: Optional[PostingProposal] = Field(None, description="Posting proposal")
-    journal_entry_id: Optional[UUID] = Field(None, description="Created journal entry ID")
-    error_message: Optional[str] = Field(None, description="Error message if failed")
-    started_at: Optional[datetime] = Field(None, description="Pipeline start time")
-    completed_at: Optional[datetime] = Field(None, description="Pipeline completion time")
+    current_step: str | None = Field(None, description="Current pipeline step")
+    receipt_doc: ReceiptDoc | None = Field(None, description="Extracted receipt data")
+    intent: Intent | None = Field(None, description="Detected intent")
+    proposal: PostingProposal | None = Field(None, description="Posting proposal")
+    journal_entry_id: UUID | None = Field(None, description="Created journal entry ID")
+    error_message: str | None = Field(None, description="Error message if failed")
+    started_at: datetime | None = Field(None, description="Pipeline start time")
+    completed_at: datetime | None = Field(None, description="Pipeline completion time")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    
+
     class Config:
         json_encoders = {
             UUID: str,
@@ -189,13 +190,13 @@ class Policy(BaseModel):
     version: str = Field(..., description="Policy version")
     country: str = Field(..., description="Country code (SE, NO, DK, FI)")
     effective_from: Date = Field(..., description="Policy effective date")
-    effective_to: Optional[Date] = Field(None, description="Policy end date")
+    effective_to: Date | None = Field(None, description="Policy end date")
     name: str = Field(..., description="Policy name")
-    description: Optional[str] = Field(None, description="Policy description")
-    rules: Dict[str, Any] = Field(..., description="Policy rules in DSL format")
+    description: str | None = Field(None, description="Policy description")
+    rules: dict[str, Any] = Field(..., description="Policy rules in DSL format")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
-    created_by: Optional[UUID] = Field(None, description="User who created the policy")
-    
+    created_by: UUID | None = Field(None, description="User who created the policy")
+
     class Config:
         json_encoders = {
             UUID: str,

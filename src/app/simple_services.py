@@ -1,28 +1,26 @@
 """Simplified services for basic API functionality."""
 
 import hashlib
-from datetime import datetime
-from typing import Optional
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from src.domain.models import Document
 
 
 class SimpleDocumentService:
     """Simplified document service for basic functionality."""
-    
+
     async def upload_document(
         self,
         company_id: UUID,
         filename: str,
         content_type: str,
         file_content: bytes,
-        uploaded_by: Optional[UUID] = None
+        uploaded_by: UUID | None = None
     ) -> Document:
         """Upload and store a document (simplified version)."""
         # Calculate file hash for deduplication
         file_hash = hashlib.sha256(file_content).hexdigest()
-        
+
         # Create document record (in-memory for now)
         document = Document(
             company_id=company_id,
@@ -33,14 +31,14 @@ class SimpleDocumentService:
             hash=file_hash,
             uploaded_by=uploaded_by
         )
-        
+
         return document
-    
-    async def get_document(self, document_id: UUID) -> Optional[Document]:
+
+    async def get_document(self, document_id: UUID) -> Document | None:
         """Get document by ID (simplified version)."""
         # For now, return None - this would be implemented with real storage
         return None
-    
+
     async def download_document(self, document: Document) -> bytes:
         """Download document content (simplified version)."""
         # For now, return empty bytes - this would be implemented with real storage
@@ -49,7 +47,7 @@ class SimpleDocumentService:
 
 class SimplePolicyService:
     """Simplified policy service for basic functionality."""
-    
+
     async def get_active_policies(self, country: str) -> list:
         """Get active policies for country (simplified version)."""
         # Return sample policies for testing
@@ -86,7 +84,7 @@ class SimplePolicyService:
 
 class SimpleBookingService:
     """Simplified booking service for basic functionality."""
-    
+
     async def get_booking(self, booking_id: UUID):
         """Get booking by ID (simplified version)."""
         # Return sample booking data for testing
@@ -144,16 +142,13 @@ class SimpleBookingService:
                 }
             }
         }
-        
+
         return sample_bookings.get(str(booking_id))
-    
+
     async def list_bookings(self, company_id: UUID, limit: int = 50, offset: int = 0):
         """List bookings for a company (simplified version with sample data)."""
         # Return sample journal entries for testing
-        from src.domain.models import JournalEntry, JournalLine
-        from decimal import Decimal
-        from datetime import date
-        
+
         sample_entries = [
             {
                 "id": "550e8400-e29b-41d4-a716-446655440010",
@@ -240,7 +235,7 @@ class SimpleBookingService:
                 ]
             }
         ]
-        
+
         # Apply pagination
         start = offset
         end = offset + limit

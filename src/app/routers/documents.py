@@ -1,12 +1,15 @@
 """Document management API router."""
 
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-import structlog
 
-from src.app.dto import DocumentUploadRequest, DocumentUploadResponse, DocumentResponse, ErrorResponse
+import structlog
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+
 from src.app.dependencies import get_document_service, get_pipeline_orchestrator
+from src.app.dto import (
+    DocumentResponse,
+    DocumentUploadResponse,
+)
 from src.domain.services import DocumentService
 from src.orchestrator.pipeline import PipelineOrchestrator
 
@@ -28,10 +31,10 @@ async def upload_document(
     """Upload a document and start processing pipeline."""
     try:
         logger.info("Document upload started", filename=file.filename, company_id=str(company_id))
-        
+
         # Read file content
         file_content = await file.read()
-        
+
         # Determine content type with fallback
         content_type = file.content_type or "application/octet-stream"
         if not content_type and file.filename:
@@ -46,7 +49,7 @@ async def upload_document(
                 content_type = "application/pdf"
             else:
                 content_type = "application/octet-stream"
-        
+
         # Upload document
         document = await document_service.upload_document(
             company_id=company_id,
@@ -55,7 +58,7 @@ async def upload_document(
             file_content=file_content,
             uploaded_by=user_id
         )
-        
+
         # Run the pipeline with database-backed orchestrator
         pipeline_result = await pipeline_orchestrator.run_pipeline(
             document_id=document.id,
@@ -63,7 +66,7 @@ async def upload_document(
             user_text=user_text,
             user_id=user_id
         )
-        
+
         logger.info(
             "Document uploaded and pipeline completed",
             document_id=str(document.id),
@@ -71,14 +74,14 @@ async def upload_document(
             status=pipeline_result.status,
             booking_id=pipeline_result.journal_entry_id
         )
-        
+
         return DocumentUploadResponse(
             document_id=document.id,
             pipeline_run_id=pipeline_result.id,
             booking_id=pipeline_result.journal_entry_id,
             status=pipeline_result.status
         )
-        
+
     except Exception as e:
         logger.error("Document upload failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -98,7 +101,7 @@ async def get_document_result(
             "status": "processed",
             "message": "Document processing completed. Use the pipeline endpoint to get detailed results."
         }
-        
+
     except Exception as e:
         logger.error("Failed to get document result", document_id=str(document_id), error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -114,7 +117,7 @@ async def get_document(
         document = await document_service.get_document(document_id)
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
-        
+
         return DocumentResponse(
             id=document.id,
             filename=document.filename,
@@ -122,7 +125,7 @@ async def get_document(
             size=document.size,
             uploaded_at=document.uploaded_at
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -130,7 +133,7 @@ async def get_document(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/documents", response_model=List[DocumentResponse])
+@router.get("/documents", response_model=list[DocumentResponse])
 async def list_documents(
     company_id: UUID,
     limit: int = 50,
@@ -140,7 +143,7 @@ async def list_documents(
     """List documents for a company."""
     try:
         documents = await document_service.list_documents(company_id, limit, offset)
-        
+
         return [
             DocumentResponse(
                 id=document.id,
@@ -151,7 +154,7 @@ async def list_documents(
             )
             for document in documents
         ]
-        
+
     except Exception as e:
         logger.error("Failed to list documents", company_id=str(company_id), error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -167,16 +170,16 @@ async def download_document(
         document = await document_service.get_document(document_id)
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
-        
+
         file_content = await document_service.download_document(document)
-        
+
         from fastapi.responses import Response
         return Response(
             content=file_content,
             media_type=document.content_type,
             headers={"Content-Disposition": f"attachment; filename={document.filename}"}
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:

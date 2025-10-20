@@ -1,19 +1,25 @@
 """Unit tests for domain models."""
 
-import pytest
+from datetime import date
 from decimal import Decimal
-from datetime import date, datetime
 from uuid import uuid4
 
+import pytest
+
 from src.domain.models import (
-    ReceiptDoc, Intent, PostingProposal, JournalEntry, 
-    JournalLine, StoplightDecision, Currency
+    Currency,
+    Intent,
+    JournalEntry,
+    JournalLine,
+    PostingProposal,
+    ReceiptDoc,
+    StoplightDecision,
 )
 
 
 class TestReceiptDoc:
     """Test ReceiptDoc model."""
-    
+
     def test_receipt_creation(self):
         """Test creating a receipt document."""
         receipt = ReceiptDoc(
@@ -23,13 +29,13 @@ class TestReceiptDoc:
             date=date(2024, 1, 15),
             confidence=0.9
         )
-        
+
         assert receipt.total == Decimal("100.00")
         assert receipt.currency == Currency.SEK
         assert receipt.vendor == "Test Vendor"
         assert receipt.date == date(2024, 1, 15)
         assert receipt.confidence == 0.9
-    
+
     def test_receipt_validation(self):
         """Test receipt validation."""
         with pytest.raises(ValueError):
@@ -44,7 +50,7 @@ class TestReceiptDoc:
 
 class TestIntent:
     """Test Intent model."""
-    
+
     def test_intent_creation(self):
         """Test creating an intent."""
         intent = Intent(
@@ -52,7 +58,7 @@ class TestIntent:
             confidence=0.9,
             slots={"attendees_count": 3, "purpose": "Client meeting"}
         )
-        
+
         assert intent.name == "representation_meal"
         assert intent.confidence == 0.9
         assert intent.slots["attendees_count"] == 3
@@ -61,7 +67,7 @@ class TestIntent:
 
 class TestPostingProposal:
     """Test PostingProposal model."""
-    
+
     def test_posting_proposal_creation(self):
         """Test creating a posting proposal."""
         proposal = PostingProposal(
@@ -72,7 +78,7 @@ class TestPostingProposal:
             stoplight=StoplightDecision.GREEN,
             policy_id="SE_REPR_MEAL_V1"
         )
-        
+
         assert proposal.vat_code == "12"
         assert proposal.confidence == 0.9
         assert proposal.stoplight == StoplightDecision.GREEN
@@ -81,7 +87,7 @@ class TestPostingProposal:
 
 class TestJournalEntry:
     """Test JournalEntry model."""
-    
+
     def test_journal_entry_creation(self):
         """Test creating a journal entry."""
         company_id = uuid4()
@@ -92,7 +98,7 @@ class TestJournalEntry:
             number="000001",
             notes="Test entry"
         )
-        
+
         assert entry.company_id == company_id
         assert entry.date == date(2024, 1, 15)
         assert entry.series == "AI"
@@ -103,7 +109,7 @@ class TestJournalEntry:
 
 class TestJournalLine:
     """Test JournalLine model."""
-    
+
     def test_journal_line_creation(self):
         """Test creating a journal line."""
         entry_id = uuid4()
@@ -114,7 +120,7 @@ class TestJournalLine:
             amount=Decimal("100.00"),
             description="Test line"
         )
-        
+
         assert line.entry_id == entry_id
         assert line.account == "6071"
         assert line.side == "D"

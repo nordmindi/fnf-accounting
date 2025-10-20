@@ -1,13 +1,14 @@
 """Custom exceptions for the Fire & Forget Accounting API."""
 
-from typing import Any, Dict, Optional
+from typing import Any
+
 from fastapi import HTTPException, status
 
 
 class FireForgetException(Exception):
     """Base exception for Fire & Forget Accounting system."""
-    
-    def __init__(self, message: str, error_code: str = None, details: Dict[str, Any] = None):
+
+    def __init__(self, message: str, error_code: str = None, details: dict[str, Any] = None):
         self.message = message
         self.error_code = error_code
         self.details = details or {}
@@ -16,7 +17,7 @@ class FireForgetException(Exception):
 
 class DocumentNotFoundError(FireForgetException):
     """Raised when a document is not found."""
-    
+
     def __init__(self, document_id: str):
         super().__init__(
             message=f"Document {document_id} not found",
@@ -27,7 +28,7 @@ class DocumentNotFoundError(FireForgetException):
 
 class PipelineRunNotFoundError(FireForgetException):
     """Raised when a pipeline run is not found."""
-    
+
     def __init__(self, pipeline_run_id: str):
         super().__init__(
             message=f"Pipeline run {pipeline_run_id} not found",
@@ -38,7 +39,7 @@ class PipelineRunNotFoundError(FireForgetException):
 
 class JournalEntryNotFoundError(FireForgetException):
     """Raised when a journal entry is not found."""
-    
+
     def __init__(self, entry_id: str):
         super().__init__(
             message=f"Journal entry {entry_id} not found",
@@ -49,7 +50,7 @@ class JournalEntryNotFoundError(FireForgetException):
 
 class PolicyNotFoundError(FireForgetException):
     """Raised when a policy is not found."""
-    
+
     def __init__(self, policy_id: str):
         super().__init__(
             message=f"Policy {policy_id} not found",
@@ -60,7 +61,7 @@ class PolicyNotFoundError(FireForgetException):
 
 class BASAccountNotFoundError(FireForgetException):
     """Raised when a BAS account is not found."""
-    
+
     def __init__(self, account_number: str):
         super().__init__(
             message=f"BAS account {account_number} not found",
@@ -71,7 +72,7 @@ class BASAccountNotFoundError(FireForgetException):
 
 class InvalidDocumentFormatError(FireForgetException):
     """Raised when document format is invalid."""
-    
+
     def __init__(self, content_type: str, supported_formats: list = None):
         super().__init__(
             message=f"Invalid document format: {content_type}",
@@ -85,7 +86,7 @@ class InvalidDocumentFormatError(FireForgetException):
 
 class DocumentProcessingError(FireForgetException):
     """Raised when document processing fails."""
-    
+
     def __init__(self, step: str, reason: str):
         super().__init__(
             message=f"Document processing failed at step '{step}': {reason}",
@@ -96,7 +97,7 @@ class DocumentProcessingError(FireForgetException):
 
 class IntentDetectionError(FireForgetException):
     """Raised when intent detection fails."""
-    
+
     def __init__(self, reason: str):
         super().__init__(
             message=f"Intent detection failed: {reason}",
@@ -107,7 +108,7 @@ class IntentDetectionError(FireForgetException):
 
 class PolicyMatchingError(FireForgetException):
     """Raised when no matching policy is found."""
-    
+
     def __init__(self, intent: str, country: str):
         super().__init__(
             message=f"No matching policy found for intent '{intent}' in country '{country}'",
@@ -118,7 +119,7 @@ class PolicyMatchingError(FireForgetException):
 
 class BookingCreationError(FireForgetException):
     """Raised when journal entry creation fails."""
-    
+
     def __init__(self, reason: str):
         super().__init__(
             message=f"Journal entry creation failed: {reason}",
@@ -129,7 +130,7 @@ class BookingCreationError(FireForgetException):
 
 class ValidationError(FireForgetException):
     """Raised when input validation fails."""
-    
+
     def __init__(self, field: str, value: Any, reason: str):
         super().__init__(
             message=f"Validation failed for field '{field}': {reason}",
@@ -140,7 +141,7 @@ class ValidationError(FireForgetException):
 
 class DatabaseError(FireForgetException):
     """Raised when database operations fail."""
-    
+
     def __init__(self, operation: str, reason: str):
         super().__init__(
             message=f"Database operation '{operation}' failed: {reason}",
@@ -151,7 +152,7 @@ class DatabaseError(FireForgetException):
 
 class StorageError(FireForgetException):
     """Raised when storage operations fail."""
-    
+
     def __init__(self, operation: str, reason: str):
         super().__init__(
             message=f"Storage operation '{operation}' failed: {reason}",
@@ -162,7 +163,7 @@ class StorageError(FireForgetException):
 
 class ExternalServiceError(FireForgetException):
     """Raised when external service calls fail."""
-    
+
     def __init__(self, service: str, reason: str):
         super().__init__(
             message=f"External service '{service}' failed: {reason}",
@@ -193,7 +194,7 @@ EXCEPTION_TO_HTTP_STATUS = {
 def create_http_exception(exc: FireForgetException) -> HTTPException:
     """Convert FireForgetException to HTTPException."""
     status_code = EXCEPTION_TO_HTTP_STATUS.get(type(exc), status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     return HTTPException(
         status_code=status_code,
         detail={

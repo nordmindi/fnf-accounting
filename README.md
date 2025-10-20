@@ -1,5 +1,10 @@
 # Fire & Forget AI Accounting
 
+[![CI Pipeline](https://github.com/nordmindi/fnf-accounting/actions/workflows/ci.yml/badge.svg)](https://github.com/nordmindi/fnf-accounting/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/nordmindi/fnf-accounting/actions/workflows/quality.yml/badge.svg)](https://github.com/nordmindi/fnf-accounting/actions/workflows/quality.yml)
+[![Test Matrix](https://github.com/nordmindi/fnf-accounting/actions/workflows/test-matrix.yml/badge.svg)](https://github.com/nordmindi/fnf-accounting/actions/workflows/test-matrix.yml)
+[![Dependencies](https://github.com/nordmindi/fnf-accounting/actions/workflows/dependencies.yml/badge.svg)](https://github.com/nordmindi/fnf-accounting/actions/workflows/dependencies.yml)
+
 ## What it does
 AI-powered backend that automates accounting from receipt to journal entry with Nordic compliance and full auditability. The system processes financial documents, applies localized accounting rules, and produces legally valid journal entries with complete audit trails.
 
@@ -356,6 +361,39 @@ The test suite covers:
 - ✅ Multi-language Support (Swedish and English)
 - ✅ VAT Optimization (deductible splits, reverse charge)
 
+## CI/CD Pipeline
+
+The project includes comprehensive GitHub Actions workflows for continuous integration and deployment:
+
+### 🔄 **CI Pipeline** (`ci.yml`)
+- **Linting**: ruff, black, isort, mypy, bandit, pip-audit
+- **Testing**: pytest with coverage reporting
+- **Database**: PostgreSQL and Redis services
+- **Security**: Automated security scanning
+- **Code Quality**: Format checking and type validation
+
+### 🧪 **Test Matrix** (`test-matrix.yml`)
+- **Multi-version Testing**: Python 3.11 and 3.12
+- **Test Types**: Unit and integration tests
+- **Coverage**: Codecov integration for coverage tracking
+- **Services**: Full database and Redis setup
+
+### 🔍 **Code Quality** (`quality.yml`)
+- **Pre-commit Hooks**: Automated code quality checks
+- **Security Scanning**: Bandit and pip-audit security analysis
+- **Dependency Checks**: Conflict detection and outdated package scanning
+
+### 📦 **Dependencies** (`dependencies.yml`)
+- **Weekly Security Scans**: Automated dependency vulnerability checks
+- **Update Monitoring**: Outdated package detection
+- **Conflict Detection**: Dependency conflict resolution
+
+### 🚀 **Pre-commit Configuration**
+- **Automated Formatting**: Black, isort, ruff
+- **Type Checking**: mypy with strict mode
+- **Security**: Bandit security linting
+- **Quality**: Flake8 code quality checks
+
 ## Quality Standards
 
 - **Type Safety:** mypy strict mode enabled
@@ -363,6 +401,7 @@ The test suite covers:
 - **Security:** bandit + pip-audit
 - **Testing:** pytest with 80%+ coverage target
 - **Documentation:** Docstrings for all public functions
+- **CI/CD:** Automated testing, linting, and security scanning
 
 ## Development Workflow
 

@@ -1,27 +1,25 @@
 """Integration tests for end-to-end scenarios."""
 
-import pytest
-import asyncio
 from decimal import Decimal
-from datetime import date
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock
 
-from src.domain.natural_language_service import NaturalLanguageService
+import pytest
+
 from src.adapters.llm import LLMAdapter
+from src.domain.natural_language_service import NaturalLanguageService
 from src.rules.engine import RuleEngine
-from src.domain.models import Intent, ReceiptDoc, Currency, VATLine
 
 
 class TestEndToEndScenarios:
     """Integration tests for complete user scenarios."""
-    
+
     @pytest.fixture
     def mock_llm(self):
         """Mock LLM adapter."""
         llm = Mock(spec=LLMAdapter)
         llm.detect_intent = AsyncMock()
         return llm
-    
+
     @pytest.fixture
     def real_rule_engine(self):
         """Real rule engine with actual policies."""
@@ -122,12 +120,12 @@ class TestEndToEndScenarios:
             }
         ]
         return RuleEngine(policies)
-    
+
     @pytest.fixture
     def nl_service(self, mock_llm, real_rule_engine):
         """Natural Language Service with real rule engine."""
         return NaturalLanguageService(mock_llm, real_rule_engine)
-    
+
     @pytest.mark.asyncio
     async def test_representation_meal_complete_flow(self, nl_service, mock_llm):
         """Test complete flow for representation meal scenario."""
@@ -141,22 +139,22 @@ class TestEndToEndScenarios:
                 "client": "Example AB"
             }
         }
-        
+
         # Process the request
         result = await nl_service.process_natural_language_input(
             "Business lunch today with the project manager of Example AB at Example restaurant, total amount 1500 SEK, paid with company credit card",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify intent detection
         assert result['intent'].name == "representation_meal"
         assert result['intent'].slots['attendees_count'] == 2
         assert result['intent'].slots['purpose'] == "Business meeting with client from Example AB"
-        
+
         # Verify proposal
         assert result['proposal'].stoplight.value == "GREEN"
         assert len(result['proposal'].lines) == 4
-        
+
         # Verify posting lines
         lines = result['proposal'].lines
         accounts = [line.account for line in lines]
@@ -164,21 +162,21 @@ class TestEndToEndScenarios:
         assert "6072" in accounts  # Non-deductible representation
         assert "2641" in accounts  # VAT deductible
         assert "1930" in accounts  # Bank
-        
+
         # Verify amounts (with 2 attendees, max deductible is 600 SEK)
         deductible_line = next(line for line in lines if line.account == "6071")
         non_deductible_line = next(line for line in lines if line.account == "6072")
         vat_line = next(line for line in lines if line.account == "2641")
         bank_line = next(line for line in lines if line.account == "1930")
-        
+
         assert deductible_line.amount == Decimal('480.00')  # 600 / 1.12
         assert non_deductible_line.amount == Decimal('900.00')  # 1500 - 600
         assert vat_line.amount == Decimal('120.00')  # 600 - 480
         assert bank_line.amount == Decimal('1500.00')
-        
+
         # Verify VAT mode
         assert result['proposal'].vat_mode == "standard"
-    
+
     @pytest.mark.asyncio
     async def test_saas_reverse_charge_complete_flow(self, nl_service, mock_llm):
         """Test complete flow for SaaS reverse charge scenario."""
@@ -192,21 +190,21 @@ class TestEndToEndScenarios:
                 "supplier_country": "US"
             }
         }
-        
+
         # Process the request
         result = await nl_service.process_natural_language_input(
             "Paid Amazon Web Services cloud service for 4500 SEK for October 2025",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify intent detection
         assert result['intent'].name == "saas_subscription"
         assert result['intent'].slots['service_period'] == "October 2025"
-        
+
         # Verify proposal
         assert result['proposal'].stoplight.value == "GREEN"
         assert len(result['proposal'].lines) == 4
-        
+
         # Verify posting lines
         lines = result['proposal'].lines
         accounts = [line.account for line in lines]
@@ -214,24 +212,24 @@ class TestEndToEndScenarios:
         assert "2614" in accounts  # Outgoing reverse charge VAT
         assert "2645" in accounts  # Incoming reverse charge VAT
         assert "1930" in accounts  # Bank
-        
+
         # Verify amounts (reverse charge: 4500 is net, VAT is 1125)
         it_line = next(line for line in lines if line.account == "6540")
         outgoing_vat_line = next(line for line in lines if line.account == "2614")
         incoming_vat_line = next(line for line in lines if line.account == "2645")
         bank_line = next(line for line in lines if line.account == "1930")
-        
+
         assert it_line.amount == Decimal('4500.00')  # Net amount
         assert outgoing_vat_line.amount == Decimal('1125.00')  # 25% of 4500
         assert incoming_vat_line.amount == Decimal('1125.00')  # Same VAT amount
         assert bank_line.amount == Decimal('5625.00')  # Net + VAT
-        
+
         # Verify VAT mode and report boxes
         assert result['proposal'].vat_mode == "reverse_charge"
         assert result['proposal'].report_boxes["21"] == "net_before_cap"
         assert result['proposal'].report_boxes["30"] == "vat_before_cap"
         assert result['proposal'].report_boxes["48"] == "vat_before_cap"
-    
+
     @pytest.mark.asyncio
     async def test_mobile_phone_installment_complete_flow(self, nl_service, mock_llm):
         """Test complete flow for mobile phone installment scenario."""
@@ -246,60 +244,60 @@ class TestEndToEndScenarios:
                 "vendor": "NetOnNet"
             }
         }
-        
+
         # Process the request
         result = await nl_service.process_natural_language_input(
             "Jag har köpt en mobil telefon från NetOnNet på företagskortet. Mobilen kostar 15000 och ska avbetal under 12 månader",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify intent detection
         assert result['intent'].name == "mobile_phone_purchase"
         assert result['intent'].slots['installment_months'] == 12
         assert result['intent'].slots['device_type'] == "mobile phone"
-        
+
         # Verify proposal
         assert result['proposal'].stoplight.value == "GREEN"
         assert len(result['proposal'].lines) == 3
-        
+
         # Verify posting lines
         lines = result['proposal'].lines
         accounts = [line.account for line in lines]
         assert "1630" in accounts  # Mobile phones and communication equipment
         assert "2640" in accounts  # Input VAT 25%
         assert "2440" in accounts  # Supplier liability (installment)
-        
+
         # Verify amounts
         asset_line = next(line for line in lines if line.account == "1630")
         vat_line = next(line for line in lines if line.account == "2640")
         liability_line = next(line for line in lines if line.account == "2440")
-        
+
         assert asset_line.amount == Decimal('12000.00')  # 15000 / 1.25
         assert vat_line.amount == Decimal('3000.00')  # 25% of 12000
         assert liability_line.amount == Decimal('15000.00')  # Total amount
-        
+
         # Verify VAT mode
         assert result['proposal'].vat_mode == "standard"
-    
+
     @pytest.mark.asyncio
     async def test_fallback_detection_flow(self, nl_service, mock_llm):
         """Test fallback detection when LLM fails."""
         # Mock LLM failure
         mock_llm.detect_intent.side_effect = Exception("LLM API error")
-        
+
         # Process the request
         result = await nl_service.process_natural_language_input(
             "office supplies 2500 SEK",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify fallback detection worked
         assert result['intent'].name == "office_supplies"
         assert result['intent'].slots['purpose'] == "Office supplies"
-        
+
         # Should get YELLOW stoplight due to no matching policy
         assert result['proposal'].stoplight.value == "YELLOW"
-    
+
     @pytest.mark.asyncio
     async def test_low_confidence_fallback_flow(self, nl_service, mock_llm):
         """Test fallback when LLM returns low confidence."""
@@ -309,17 +307,17 @@ class TestEndToEndScenarios:
             "confidence": 0.3,
             "slots": {}
         }
-        
+
         # Process the request
         result = await nl_service.process_natural_language_input(
             "mobile phone purchase 10000 SEK",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify fallback detection worked
         assert result['intent'].name == "mobile_phone_purchase"
         assert result['intent'].slots['device_type'] == "mobile phone"
-    
+
     @pytest.mark.asyncio
     async def test_swedish_language_processing(self, nl_service, mock_llm):
         """Test processing of Swedish language input."""
@@ -333,26 +331,26 @@ class TestEndToEndScenarios:
                 "client": "Exempel AB"
             }
         }
-        
+
         # Process Swedish request
         result = await nl_service.process_natural_language_input(
             "Affärslunch idag med projektledaren från Exempel AB på Exempel restaurang, totalt belopp 1800 SEK, betalt med företagskort",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Verify processing
         assert result['intent'].name == "representation_meal"
         assert result['intent'].slots['attendees_count'] == 3
         assert result['intent'].slots['purpose'] == "Affärsmöte med kund"
-        
+
         # With 3 attendees, max deductible is 900 SEK (3 * 300)
         lines = result['proposal'].lines
         deductible_line = next(line for line in lines if line.account == "6071")
         non_deductible_line = next(line for line in lines if line.account == "6072")
-        
+
         assert deductible_line.amount == Decimal('720.00')  # 900 / 1.12
         assert non_deductible_line.amount == Decimal('900.00')  # 1800 - 900
-    
+
     @pytest.mark.asyncio
     async def test_error_handling_and_recovery(self, nl_service, mock_llm):
         """Test error handling and recovery mechanisms."""
@@ -361,21 +359,21 @@ class TestEndToEndScenarios:
             "invalid input with no clear intent",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Should not crash and return some result
         assert result is not None
         assert result['intent'] is not None
         assert result['proposal'] is not None
-        
+
         # Test with empty input
         result = await nl_service.process_natural_language_input(
             "",
             "123e4567-e89b-12d3-a456-426614174007"
         )
-        
+
         # Should handle gracefully
         assert result is not None
-    
+
     @pytest.mark.asyncio
     async def test_multiple_scenarios_consistency(self, nl_service, mock_llm):
         """Test consistency across multiple scenarios."""
@@ -396,7 +394,7 @@ class TestEndToEndScenarios:
                 "expected_months": 24
             }
         ]
-        
+
         for scenario in scenarios:
             # Mock appropriate LLM response
             if scenario["expected_intent"] == "representation_meal":
@@ -426,16 +424,16 @@ class TestEndToEndScenarios:
                         "device_type": "mobile phone"
                     }
                 }
-            
+
             # Process scenario
             result = await nl_service.process_natural_language_input(
                 scenario["input"],
                 "123e4567-e89b-12d3-a456-426614174007"
             )
-            
+
             # Verify intent
             assert result['intent'].name == scenario["expected_intent"]
-            
+
             # Verify proposal exists
             assert result['proposal'] is not None
             assert result['proposal'].stoplight is not None

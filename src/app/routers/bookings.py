@@ -1,12 +1,12 @@
 """Booking management API router."""
 
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
-import structlog
 
-from src.app.dto import BookingResponse, JournalEntryResponse, ErrorResponse
+import structlog
+from fastapi import APIRouter, Depends, HTTPException
+
 from src.app.dependencies import get_booking_service
+from src.app.dto import JournalEntryResponse
 from src.domain.services import BookingService
 
 logger = structlog.get_logger()
@@ -23,7 +23,7 @@ async def get_booking(
         booking = await booking_service.get_journal_entry(booking_id)
         if not booking:
             raise HTTPException(status_code=404, detail="Booking not found")
-        
+
         return JournalEntryResponse(
             id=booking.id,
             company_id=booking.company_id,
@@ -46,7 +46,7 @@ async def get_booking(
                 for line in booking.lines
             ]
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -54,7 +54,7 @@ async def get_booking(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/bookings", response_model=List[JournalEntryResponse])
+@router.get("/bookings", response_model=list[JournalEntryResponse])
 async def list_bookings(
     company_id: UUID,
     limit: int = 50,
@@ -64,7 +64,7 @@ async def list_bookings(
     """List bookings for a company."""
     try:
         bookings = await booking_service.list_journal_entries(company_id, limit, offset)
-        
+
         return [
             JournalEntryResponse(
                 id=booking.id,
@@ -90,7 +90,7 @@ async def list_bookings(
             )
             for booking in bookings
         ]
-        
+
     except Exception as e:
         logger.error("Failed to list bookings", company_id=str(company_id), error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -104,13 +104,11 @@ async def get_booking_by_pipeline(
     """Get booking by pipeline run ID."""
     try:
         # Get pipeline run to find the journal entry ID
-        from src.app.dependencies import get_pipeline_orchestrator
-        from src.orchestrator.pipeline import PipelineOrchestrator
-        
+
         # This would need to be injected properly, but for now we'll use a simple approach
         # In a real implementation, you'd inject the pipeline orchestrator
         raise HTTPException(status_code=501, detail="Not implemented yet - requires pipeline orchestrator injection")
-        
+
     except HTTPException:
         raise
     except Exception as e:

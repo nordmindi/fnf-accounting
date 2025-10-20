@@ -1,13 +1,13 @@
 """Pipeline management API router."""
 
 from datetime import datetime
-from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException
-import structlog
 
-from src.app.dto import PipelineStartRequest, PipelineResponse, ErrorResponse
+import structlog
+from fastapi import APIRouter, Depends, HTTPException
+
 from src.app.dependencies import get_pipeline_orchestrator
+from src.app.dto import PipelineResponse, PipelineStartRequest
 from src.orchestrator.pipeline import PipelineOrchestrator
 
 logger = structlog.get_logger()
@@ -28,14 +28,14 @@ async def start_pipeline(
             document_id=str(request.document_id),
             company_id=str(company_id)
         )
-        
+
         # Start the actual pipeline processing
         pipeline_run = await orchestrator.run_pipeline(
             document_id=request.document_id,
             company_id=company_id,
             user_id=user_id
         )
-        
+
         return PipelineResponse(
             id=pipeline_run.id,
             document_id=pipeline_run.document_id,
@@ -46,7 +46,7 @@ async def start_pipeline(
             error_message=pipeline_run.error_message,
             booking_id=pipeline_run.journal_entry_id
         )
-        
+
     except Exception as e:
         logger.error("Pipeline start failed", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -61,7 +61,7 @@ async def get_pipeline_status(
     try:
         # Get the actual pipeline result from the orchestrator
         pipeline_result = await orchestrator.get_pipeline_status(run_id)
-        
+
         if pipeline_result:
             return PipelineResponse(
                 id=run_id,
@@ -76,7 +76,7 @@ async def get_pipeline_status(
         else:
             # Pipeline not found
             raise HTTPException(status_code=404, detail="Pipeline run not found")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -93,13 +93,13 @@ async def get_pipeline_debug(
     try:
         # Get the actual pipeline result from the orchestrator
         pipeline_result = await orchestrator.get_pipeline_status(run_id)
-        
+
         if pipeline_result:
             return pipeline_result.dict()
         else:
             # Pipeline not found
             raise HTTPException(status_code=404, detail="Pipeline run not found")
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -107,7 +107,7 @@ async def get_pipeline_debug(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/pipelines", response_model=List[PipelineResponse])
+@router.get("/pipelines", response_model=list[PipelineResponse])
 async def list_pipelines(
     company_id: UUID,
     limit: int = 50,
@@ -118,7 +118,7 @@ async def list_pipelines(
     try:
         # Get pipeline runs from the orchestrator
         pipeline_runs = await orchestrator.list_pipeline_runs(company_id, limit, offset)
-        
+
         # Convert to response format
         return [
             PipelineResponse(
@@ -133,7 +133,7 @@ async def list_pipelines(
             )
             for run in pipeline_runs
         ]
-        
+
     except Exception as e:
         logger.error("Failed to list pipelines", company_id=str(company_id), error=str(e))
         raise HTTPException(status_code=500, detail=str(e))

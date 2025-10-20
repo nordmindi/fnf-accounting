@@ -1,24 +1,24 @@
 """LLM adapter for natural language understanding."""
 
 import json
-from typing import Dict, Any, List, Optional
-import openai
+from typing import Any
+
 from openai import AsyncOpenAI
 
 
 class LLMAdapter:
     """LLM adapter using OpenAI API."""
-    
-    def __init__(self, config: Dict[str, Any]):
+
+    def __init__(self, config: dict[str, Any]):
         self.config = config
         self.client = AsyncOpenAI(api_key=config.get("api_key"))
         self.model = config.get("model", "gpt-4")
         self.temperature = config.get("temperature", 0.1)
-    
-    async def detect_intent(self, context: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def detect_intent(self, context: dict[str, Any]) -> dict[str, Any]:
         """Detect intent and extract slots from context."""
         prompt = self._build_intent_prompt(context)
-        
+
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -35,19 +35,19 @@ class LLMAdapter:
                 temperature=self.temperature,
                 response_format={"type": "json_object"}
             )
-            
+
             result = json.loads(response.choices[0].message.content)
             return self._validate_intent_result(result)
-            
-        except Exception as e:
+
+        except Exception:
             # Fallback to rule-based intent detection
             return self._fallback_intent_detection(context)
-    
-    def _build_intent_prompt(self, context: Dict[str, Any]) -> str:
+
+    def _build_intent_prompt(self, context: dict[str, Any]) -> str:
         """Build prompt for intent detection."""
         receipt = context.get("receipt", {})
         user_text = context.get("user_text", "")
-        
+
         prompt = f"""
 Analyze this receipt and user instruction to determine the business intent and extract relevant information.
 
@@ -110,57 +110,57 @@ Example response:
 }}
 """
         return prompt
-    
-    def _validate_intent_result(self, result: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _validate_intent_result(self, result: dict[str, Any]) -> dict[str, Any]:
         """Validate and clean intent detection result."""
         # Ensure required fields
         if "intent" not in result:
             result["intent"] = "other_business"
-        
+
         if "confidence" not in result:
             result["confidence"] = 0.5
-        
+
         if "slots" not in result:
             result["slots"] = {}
-        
+
         # Validate intent
         valid_intents = [
             "representation_meal",
-            "taxi_transport", 
+            "taxi_transport",
             "saas_subscription",
             "office_supplies",
             "travel_accommodation",
             "other_business",
             "personal"
         ]
-        
+
         if result["intent"] not in valid_intents:
             result["intent"] = "other_business"
-        
+
         # Validate confidence
         confidence = float(result["confidence"])
         result["confidence"] = max(0.0, min(1.0, confidence))
-        
+
         # Clean slots
         slots = result["slots"]
         if not isinstance(slots, dict):
             result["slots"] = {}
-        
+
         # Convert numeric slots
         if "attendees_count" in slots:
             try:
                 result["slots"]["attendees_count"] = int(slots["attendees_count"])
             except:
                 result["slots"]["attendees_count"] = 1
-        
+
         return result
-    
-    def _fallback_intent_detection(self, context: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _fallback_intent_detection(self, context: dict[str, Any]) -> dict[str, Any]:
         """Fallback rule-based intent detection."""
         receipt = context.get("receipt", {})
         user_text = context.get("user_text", "").lower()
         vendor = receipt.get("vendor", "").lower()
-        
+
         # Rule-based intent detection
         if any(word in user_text for word in ["meal", "lunch", "dinner", "restaurant", "representation"]):
             return {
@@ -171,21 +171,21 @@ Example response:
                     "purpose": "Business meal"  # Add default purpose
                 }
             }
-        
+
         if any(word in user_text for word in ["taxi", "transport", "travel", "uber"]):
             return {
                 "intent": "taxi_transport",
                 "confidence": 0.7,
                 "slots": {"purpose": "Business transport"}
             }
-        
+
         if any(word in user_text for word in ["subscription", "saas", "software", "cloud"]):
             return {
                 "intent": "saas_subscription",
                 "confidence": 0.7,
                 "slots": {"service_period": "Monthly"}
             }
-        
+
         # Vendor-based detection
         if any(word in vendor for word in ["restaurant", "cafe", "bar", "hotel"]):
             return {
@@ -196,14 +196,14 @@ Example response:
                     "purpose": "Business meal"  # Add default purpose
                 }
             }
-        
+
         if any(word in vendor for word in ["taxi", "uber", "transport"]):
             return {
                 "intent": "taxi_transport",
                 "confidence": 0.6,
                 "slots": {}
             }
-        
+
         # Default
         return {
             "intent": "other_business",
@@ -212,16 +212,16 @@ Example response:
                 "purpose": user_text or "General business expense"
             }
         }
-    
+
     async def generate_clarification_question(
-        self, 
-        proposal: Dict[str, Any], 
-        missing_fields: List[str]
+        self,
+        proposal: dict[str, Any],
+        missing_fields: list[str]
     ) -> str:
         """Generate a clarifying question for missing information."""
         if not missing_fields:
             return "Please provide additional details for this expense."
-        
+
         # Map field names to user-friendly questions
         field_questions = {
             "attendees_count": "How many people attended this meal?",
@@ -232,21 +232,21 @@ Example response:
             "destination": "What was the travel destination?",
             "service_period": "What period does this subscription cover?"
         }
-        
+
         # Use the first missing field for the question
         first_field = missing_fields[0]
         return field_questions.get(first_field, "Please provide additional details for this expense.")
-    
+
     async def explain_booking_decision(
-        self, 
-        proposal: Dict[str, Any], 
-        receipt: Dict[str, Any]
+        self,
+        proposal: dict[str, Any],
+        receipt: dict[str, Any]
     ) -> str:
         """Generate explanation for booking decision."""
         stoplight = proposal.get("stoplight", "RED")
         policy_id = proposal.get("policy_id", "Unknown")
         reason_codes = proposal.get("reason_codes", [])
-        
+
         if stoplight == "GREEN":
             return f"Automatically booked using policy {policy_id}. The expense was processed without manual intervention."
         elif stoplight == "YELLOW":

@@ -1,12 +1,12 @@
 """Test configuration and fixtures."""
 
-import pytest
 import asyncio
-from decimal import Decimal
 from datetime import date
-from unittest.mock import Mock
+from decimal import Decimal
 
-from src.domain.models import Intent, ReceiptDoc, Currency, VATLine
+import pytest
+
+from src.domain.models import Currency, Intent, ReceiptDoc, VATLine
 
 
 @pytest.fixture(scope="session")
@@ -79,6 +79,7 @@ def mock_policy():
         "version": "V1",
         "country": "SE",
         "effective_from": "2024-01-01",
+        "name": "Swedish Representation Meal Policy",
         "bas_version": "2025_v1.0",
         "rules": {
             "match": {"intent": "representation_meal"},

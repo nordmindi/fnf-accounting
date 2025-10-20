@@ -1,18 +1,18 @@
 """Policy management API router."""
 
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-import structlog
 
-from src.app.dto import PolicyResponse, ErrorResponse
+import structlog
+from fastapi import APIRouter, Depends, HTTPException
+
 from src.app.dependencies import get_policy_service
+from src.app.dto import PolicyResponse
 from src.domain.services import PolicyService
 
 logger = structlog.get_logger()
 router = APIRouter()
 
 
-@router.get("/policies", response_model=List[PolicyResponse])
+@router.get("/policies", response_model=list[PolicyResponse])
 async def list_policies(
     country: str = "SE",
     policy_service: PolicyService = Depends(get_policy_service)
@@ -20,7 +20,7 @@ async def list_policies(
     """List active policies for a country."""
     try:
         policies_data = await policy_service.get_active_policies(country)
-        
+
         return [
             PolicyResponse(
                 id=policy["id"],
@@ -33,7 +33,7 @@ async def list_policies(
             )
             for policy in policies_data
         ]
-        
+
     except Exception as e:
         logger.error("Failed to list policies", country=country, error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -49,7 +49,7 @@ async def get_policy(
         policy_data = await policy_service.get_policy(policy_id)
         if not policy_data:
             raise HTTPException(status_code=404, detail="Policy not found")
-        
+
         return PolicyResponse(
             id=policy_data["id"],
             version=policy_data["version"],
@@ -59,7 +59,7 @@ async def get_policy(
             name=policy_data["name"],
             description=policy_data["description"]
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -75,7 +75,7 @@ async def create_policy(
     """Create a new policy."""
     try:
         created_policy = await policy_service.create_policy(policy_data)
-        
+
         return PolicyResponse(
             id=created_policy["id"],
             version=created_policy["version"],
@@ -85,7 +85,7 @@ async def create_policy(
             name=created_policy["name"],
             description=created_policy["description"]
         )
-        
+
     except Exception as e:
         logger.error("Failed to create policy", error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -100,7 +100,7 @@ async def update_policy(
     """Update an existing policy."""
     try:
         updated_policy = await policy_service.update_policy(policy_id, policy_data)
-        
+
         return PolicyResponse(
             id=updated_policy["id"],
             version=updated_policy["version"],
@@ -110,7 +110,7 @@ async def update_policy(
             name=updated_policy["name"],
             description=updated_policy["description"]
         )
-        
+
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

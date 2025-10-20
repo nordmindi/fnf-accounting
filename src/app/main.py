@@ -2,15 +2,22 @@
 
 from contextlib import asynccontextmanager
 from datetime import datetime
+
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import structlog
 
-from src.app.routers import documents, pipelines, bookings, policies, auth, natural_language
 from src.app.error_handlers import setup_error_handlers
+from src.app.routers import (
+    auth,
+    bookings,
+    documents,
+    natural_language,
+    pipelines,
+    policies,
+)
 from src.infra.config import get_settings
 from src.infra.database import init_db
-
 
 # Configure structured logging
 structlog.configure(
@@ -40,13 +47,13 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Fire & Forget AI Accounting API")
     settings = get_settings()
-    
+
     # Initialize database
     await init_db(settings.database_url)
     logger.info("Database initialized")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Fire & Forget AI Accounting API")
 
@@ -91,7 +98,7 @@ async def detailed_health_check():
     """Detailed health check with system status."""
     from src.infra.config import get_settings
     from src.repositories.database import DatabaseRepository
-    
+
     settings = get_settings()
     health_status = {
         "status": "healthy",
@@ -100,7 +107,7 @@ async def detailed_health_check():
         "timestamp": datetime.utcnow().isoformat(),
         "components": {}
     }
-    
+
     # Check database connectivity
     try:
         repository = DatabaseRepository(settings.database_url)
@@ -112,7 +119,7 @@ async def detailed_health_check():
     except Exception as e:
         health_status["components"]["database"] = {"status": "unhealthy", "message": str(e)}
         health_status["status"] = "degraded"
-    
+
     # Check storage connectivity (if configured)
     try:
         from src.adapters.storage import StorageAdapter
@@ -122,7 +129,7 @@ async def detailed_health_check():
     except Exception as e:
         health_status["components"]["storage"] = {"status": "unhealthy", "message": str(e)}
         health_status["status"] = "degraded"
-    
+
     # Check LLM connectivity (if configured)
     try:
         from src.adapters.llm import LLMAdapter
@@ -132,7 +139,7 @@ async def detailed_health_check():
     except Exception as e:
         health_status["components"]["llm"] = {"status": "unhealthy", "message": str(e)}
         health_status["status"] = "degraded"
-    
+
     return health_status
 
 
@@ -141,40 +148,40 @@ async def system_status():
     """System status endpoint with metrics."""
     from src.infra.config import get_settings
     from src.repositories.database import DatabaseRepository
-    
+
     settings = get_settings()
     repository = DatabaseRepository(settings.database_url)
-    
+
     try:
         # Get basic system metrics
-        from sqlalchemy import text, func
-        from src.repositories.database import DocumentModel, JournalEntryModel, PipelineRunModel
-        
+        from sqlalchemy import text
+
+
         async with repository.engine.begin() as conn:
             # Count documents
             doc_count_result = await conn.execute(
                 text("SELECT COUNT(*) FROM documents")
             )
             doc_count = doc_count_result.scalar()
-            
+
             # Count journal entries
             journal_count_result = await conn.execute(
                 text("SELECT COUNT(*) FROM journal_entries")
             )
             journal_count = journal_count_result.scalar()
-            
+
             # Count pipeline runs
             pipeline_count_result = await conn.execute(
                 text("SELECT COUNT(*) FROM pipeline_runs")
             )
             pipeline_count = pipeline_count_result.scalar()
-            
+
             # Count active policies
             policy_count_result = await conn.execute(
                 text("SELECT COUNT(*) FROM policies")
             )
             policy_count = policy_count_result.scalar()
-        
+
         return {
             "status": "operational",
             "timestamp": datetime.utcnow().isoformat(),
@@ -187,7 +194,7 @@ async def system_status():
             "version": "0.1.0",
             "environment": settings.environment
         }
-        
+
     except Exception as e:
         return {
             "status": "error",

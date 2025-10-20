@@ -1,9 +1,9 @@
 """Global error handlers for the Fire & Forget Accounting API."""
 
 import structlog
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.app.exceptions import FireForgetException, create_http_exception
@@ -13,7 +13,7 @@ logger = structlog.get_logger()
 
 def setup_error_handlers(app: FastAPI) -> None:
     """Set up global error handlers for the FastAPI application."""
-    
+
     @app.exception_handler(FireForgetException)
     async def fireforget_exception_handler(request: Request, exc: FireForgetException):
         """Handle custom FireForgetException."""
@@ -25,13 +25,13 @@ def setup_error_handlers(app: FastAPI) -> None:
             path=request.url.path,
             method=request.method
         )
-        
+
         http_exc = create_http_exception(exc)
         return JSONResponse(
             status_code=http_exc.status_code,
             content=http_exc.detail
         )
-    
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """Handle request validation errors."""
@@ -41,7 +41,7 @@ def setup_error_handlers(app: FastAPI) -> None:
             path=request.url.path,
             method=request.method
         )
-        
+
         return JSONResponse(
             status_code=422,
             content={
@@ -53,7 +53,7 @@ def setup_error_handlers(app: FastAPI) -> None:
                 }
             }
         )
-    
+
     @app.exception_handler(StarletteHTTPException)
     async def http_exception_handler(request: Request, exc: StarletteHTTPException):
         """Handle HTTP exceptions."""
@@ -64,7 +64,7 @@ def setup_error_handlers(app: FastAPI) -> None:
             path=request.url.path,
             method=request.method
         )
-        
+
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -75,7 +75,7 @@ def setup_error_handlers(app: FastAPI) -> None:
                 }
             }
         )
-    
+
     @app.exception_handler(Exception)
     async def general_exception_handler(request: Request, exc: Exception):
         """Handle general exceptions."""
@@ -87,7 +87,7 @@ def setup_error_handlers(app: FastAPI) -> None:
             method=request.method,
             exc_info=True
         )
-        
+
         return JSONResponse(
             status_code=500,
             content={

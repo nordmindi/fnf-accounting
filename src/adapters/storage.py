@@ -1,14 +1,14 @@
 """Storage adapter for object storage (S3/MinIO)."""
 
-from typing import Optional
+import io
+
 from minio import Minio
 from minio.error import S3Error
-import io
 
 
 class StorageAdapter:
     """Storage adapter using MinIO/S3."""
-    
+
     def __init__(self, config: dict):
         self.config = config
         self.client = Minio(
@@ -19,7 +19,7 @@ class StorageAdapter:
         )
         self.bucket = config["bucket"]
         self._ensure_bucket_exists()
-    
+
     def _ensure_bucket_exists(self) -> None:
         """Ensure the bucket exists."""
         try:
@@ -27,11 +27,11 @@ class StorageAdapter:
                 self.client.make_bucket(self.bucket)
         except S3Error as e:
             raise RuntimeError(f"Failed to create bucket {self.bucket}: {e}")
-    
+
     async def store_file(
-        self, 
-        key: str, 
-        content: bytes, 
+        self,
+        key: str,
+        content: bytes,
         content_type: str
     ) -> None:
         """Store file in object storage."""
@@ -45,7 +45,7 @@ class StorageAdapter:
             )
         except S3Error as e:
             raise RuntimeError(f"Failed to store file {key}: {e}")
-    
+
     async def get_file(self, key: str) -> bytes:
         """Get file from object storage."""
         try:
@@ -53,14 +53,14 @@ class StorageAdapter:
             return response.read()
         except S3Error as e:
             raise RuntimeError(f"Failed to get file {key}: {e}")
-    
+
     async def delete_file(self, key: str) -> None:
         """Delete file from object storage."""
         try:
             self.client.remove_object(self.bucket, key)
         except S3Error as e:
             raise RuntimeError(f"Failed to delete file {key}: {e}")
-    
+
     async def file_exists(self, key: str) -> bool:
         """Check if file exists in storage."""
         try:

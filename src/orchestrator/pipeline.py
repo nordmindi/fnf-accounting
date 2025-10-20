@@ -1,29 +1,26 @@
 """Pipeline orchestrator for document processing."""
 
-import asyncio
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from celery import Celery
-from celery.signals import task_prerun, task_postrun
+from celery.signals import task_postrun, task_prerun
 
 from src.domain.models import PipelineRun, StoplightDecision
 from src.domain.services import (
+    BookingService,
     DocumentService,
     ExtractionService,
     NLUService,
     ProposalService,
+    ReasonService,
     StoplightService,
-    BookingService,
-    ReasonService
 )
-from src.rules.engine import RuleEngine
 
 
 class PipelineOrchestrator:
     """Orchestrates the document processing pipeline."""
-    
+
     def __init__(
         self,
         document_service: DocumentService,
@@ -43,13 +40,13 @@ class PipelineOrchestrator:
         self.booking_service = booking_service
         self.reason_service = reason_service
         self.repository = repository
-    
+
     async def run_pipeline(
         self,
         document_id: UUID,
         company_id: UUID,
-        user_text: Optional[str] = None,
-        user_id: Optional[UUID] = None
+        user_text: str | None = None,
+        user_id: UUID | None = None
     ) -> PipelineRun:
         """Run the complete document processing pipeline."""
         # Create pipeline run record
@@ -59,50 +56,50 @@ class PipelineOrchestrator:
             status="running",
             started_at=datetime.utcnow()
         )
-        
+
         try:
             # Step 1: Load document
             pipeline_run.current_step = "load_document"
             await self.repository.save_pipeline_run(pipeline_run)
-            
+
             document = await self.document_service.get_document(document_id)
             if not document:
                 raise ValueError(f"Document {document_id} not found")
-            
+
             # Step 2: Extract receipt data
             pipeline_run.current_step = "extract_receipt"
-            
+
             file_content = await self.document_service.download_document(document)
             receipt_doc = await self.extraction_service.extract_receipt(
-                file_content, 
+                file_content,
                 document.content_type
             )
             pipeline_run.receipt_doc = receipt_doc
-            
+
             # Step 3: Detect intent
             pipeline_run.current_step = "detect_intent"
-            
+
             intent = await self.nlu_service.detect_intent(receipt_doc, user_text)
             pipeline_run.intent = intent
-            
+
             # Step 4: Create posting proposal
             pipeline_run.current_step = "create_proposal"
-            
+
             proposal = await self.proposal_service.create_proposal(intent, receipt_doc)
             pipeline_run.proposal = proposal
-            
+
             # Step 5: Make stoplight decision
             pipeline_run.current_step = "stoplight_decision"
-            
+
             final_decision = self.stoplight_service.decide_stoplight(
                 proposal, intent, receipt_doc
             )
             pipeline_run.proposal.stoplight = final_decision
-            
+
             # Step 6: Create booking if GREEN
             if final_decision == StoplightDecision.GREEN:
                 pipeline_run.current_step = "create_booking"
-                
+
                 journal_entry = await self.booking_service.create_journal_entry(
                     company_id=company_id,
                     proposal=proposal,
@@ -111,17 +108,17 @@ class PipelineOrchestrator:
                     created_by=user_id
                 )
                 pipeline_run.journal_entry_id = journal_entry.id
-            
+
             # Complete pipeline
             pipeline_run.status = "completed"
             pipeline_run.current_step = "completed"
             pipeline_run.completed_at = datetime.utcnow()
-            
+
         except Exception as e:
             pipeline_run.status = "failed"
             pipeline_run.error_message = str(e)
             pipeline_run.completed_at = datetime.utcnow()
-        
+
         # Save final state
         try:
             await self.repository.save_pipeline_run(pipeline_run)
@@ -133,14 +130,14 @@ class PipelineOrchestrator:
             else:
                 # Re-raise if it's a different error
                 raise save_error
-        
+
         return pipeline_run
-    
-    async def get_pipeline_status(self, run_id: UUID) -> Optional[PipelineRun]:
+
+    async def get_pipeline_status(self, run_id: UUID) -> PipelineRun | None:
         """Get pipeline run status."""
         return await self.repository.get_pipeline_run(run_id)
-    
-    async def list_pipeline_runs(self, company_id: UUID, limit: int = 50, offset: int = 0) -> List[PipelineRun]:
+
+    async def list_pipeline_runs(self, company_id: UUID, limit: int = 50, offset: int = 0) -> list[PipelineRun]:
         """List pipeline runs for a company."""
         return await self.repository.list_pipeline_runs(company_id, limit, offset)
 
