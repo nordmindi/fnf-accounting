@@ -1,0 +1,106 @@
+{
+  "version": "2025_v1.0",
+  "effective_from": "2025-01-01",
+  "effective_to": null,
+  "accounts": [
+    {
+      "number": "6071",
+      "name": "Representation",
+      "account_class": "60",
+      "account_type": "expense",
+      "vat_hint": 12.0,
+      "allowed_regions": ["SE"],
+      "description": "Representation meals and entertainment"
+    },
+    {
+      "number": "6072",
+      "name": "Representation, ej avdragsgill",
+      "account_class": "60",
+      "account_type": "expense",
+      "vat_hint": 12.0,
+      "allowed_regions": ["SE"],
+      "description": "Non-deductible representation expenses"
+    },
+    {
+      "number": "2641",
+      "name": "Moms på representation",
+      "account_class": "26",
+      "account_type": "liability",
+      "vat_hint": 12.0,
+      "allowed_regions": ["SE"],
+      "description": "VAT on representation expenses"
+    },
+    {
+      "number": "2640",
+      "name": "Moms på varor och tjänster",
+      "account_class": "26",
+      "account_type": "liability",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "VAT on goods and services"
+    },
+    {
+      "number": "2614",
+      "name": "Utgående moms omvänd skattskyldighet",
+      "account_class": "26",
+      "account_type": "liability",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "Outgoing reverse charge VAT"
+    },
+    {
+      "number": "2645",
+      "name": "Ingående moms omvänd skattskyldighet",
+      "account_class": "26",
+      "account_type": "asset",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "Incoming reverse charge VAT"
+    },
+    {
+      "number": "6540",
+      "name": "Transportkostnader",
+      "account_class": "65",
+      "account_type": "expense",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "Transport and travel expenses"
+    },
+    {
+      "number": "6541",
+      "name": "Programvaror och datatjänster",
+      "account_class": "65",
+      "account_type": "expense",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "Software and data services"
+    },
+    {
+      "number": "1630",
+      "name": "Datorer och IT-utrustning",
+      "account_class": "16",
+      "account_type": "asset",
+      "vat_hint": 25.0,
+      "allowed_regions": ["SE"],
+      "description": "Computers and IT equipment"
+    },
+    {
+      "number": "1930",
+      "name": "Kassa och bank",
+      "account_class": "19",
+      "account_type": "asset",
+      "vat_hint": null,
+      "allowed_regions": ["SE"],
+      "description": "Cash and bank accounts"
+    },
+    {
+      "number": "2440",
+      "name": "Leverantörsskuld",
+      "account_class": "24",
+      "account_type": "liability",
+      "vat_hint": null,
+      "allowed_regions": ["SE"],
+      "description": "Supplier liabilities"
+    }
+  ]
+}

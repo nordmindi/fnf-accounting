@@ -1,0 +1,174 @@
+# Fire & Forget AI Accounting - Development Rules
+
+## Project Overview
+
+**Name:** Fire & Forget AI Accounting  
+**Architecture:** Modular domain services with adapters/ports; policy-driven rule engine; pipeline orchestrator; vertical slices first
+
+### Tech Stack
+- **Backend:** Python@3.12 + FastAPI for API; Pydantic v2 for DTOs/models
+- **Rules:** JSON/YAML Policy DSL validated via JSON Schema
+- **Database:** PostgreSQL (JSONB) with Alembic migrations. Money = Decimal
+- **Async:** Celery + Redis for jobs; idempotent pipeline steps
+- **Storage:** S3-compatible (MinIO) for documents
+- **LLM/OCR:** Adapters with swappable providers; local-first where possible
+- **Observability:** OpenTelemetry traces; JSON logs with correlation IDs
+- **Testing:** pytest, ruff/black/isort, mypy, bandit, pip-audit
+
+## What To Do
+
+### Coding Standards
+- **PEP 8 + PEP 20;** enforced via ruff/black/isort
+- **Type hints everywhere;** mypy --strict must pass
+- **Use decimal.Decimal for money;** NEVER float
+- **All timestamps in UTC;** convert at edges only
+- **Keep business logic in domain services;** routers/adapters thin
+- **Docstrings on public functions** (purpose, inputs/outputs, errors)
+- **Small functions** (<50 LOC when feasible); single responsibility per module
+
+### Folder Structure
+**Pattern:** `src/<layer>/<module>.py`
+
+**Layers:**
+- **app:** FastAPI routers, DTOs, auth
+- **domain:** models (Pydantic), services (business logic), policies
+- **adapters:** OCR, LLM, storage, exporters, bank
+- **orchestrator:** pipeline entry (run_pipeline), job wiring
+- **rules:** policy DSL + engine + schemas
+- **repositories:** DB access; SQL/ORM only
+- **infra:** db init, migrations (alembic), config
+- **tests:** unit, integration, e2e, fixtures
+
+### Naming Conventions
+- **modules:** snake_case
+- **functions:** snake_case
+- **classes:** PascalCase
+- **constants:** UPPER_SNAKE
+- **env_vars:** UPPER_SNAKE
+- **money_type:** Decimal
+- **time:** timezone-aware UTC datetime
+
+### Design Style
+- **Policy-first:** VAT/representation rules live in versioned DSL with effective_from
+- **Stoplight:** GREEN(auto), YELLOW(ask-one), RED(park)
+- **Explainability-by-design:** every booking includes reason codes + audit chain (WORM-like)
+- **Composition over inheritance;** pure services; deterministic functions
+- **Idempotent pipelines;** safe retries; de-dup via hash+amount+date
+- **Country layers** (SE baseline; NO/DK/FI via policies, not code forks)
+
+### GitHub Workflow
+- **Conventional Commits:** feat/fix/refactor/docs/test/chore
+- **Feature branches only;** PR required; protected main
+- **Each PR must include tests** for behavior changes
+- **PR description template:** Why, What, How tested, Risks, Rollback
+- **Push code only after implementing** a functionality + tests + (if relevant) UI hook
+- **CI must be green** (lint, mypy, tests, bandit, pip-audit, policy-validate) before merge
+
+## What NOT To Do
+
+- ⛔️ **Don't make changes** without understanding impacted files and modules
+- ⛔️ **Don't modify the authentication system** without explicit approval and security review
+- ⛔️ **Don't change the database schema** without Alembic migration files and backward-compat strategy
+- ⛔️ **Don't add business logic** in routers/adapters
+- ⛔️ **Don't use float** for currency or naive datetimes
+- ⛔️ **Don't commit secrets** or disable security checks to pass CI
+
+## Guardrails
+
+### Testing
+- **TDD:** write failing tests first for rule engine, stoplight, booking
+- **pytest + coverage;** target ≥ 80% for domain/rules; E2E for 3 MVP scenarios (representation, taxi, SaaS)
+- **Hypothesis** (property tests) for money math, caps, rounding, date ranges
+- **Every bug requires a regression test**
+
+### Security
+- **Run bandit and pip-audit** in CI; fix or justify
+- **Validate all requests** with Pydantic DTOs; validate policies with JSON Schema
+- **JWT/OAuth2;** enforce RBAC checks in service entrypoints
+- **Rate-limit public endpoints;** structured security logging
+- **EU/EES data residency** by default; DPIA documented before pilot
+
+### CI/CD
+- **GitHub Actions:** ruff/black/isort → mypy → pytest → coverage gate → bandit → pip-audit → policy-validate → docker build
+- **Block merge** if coverage below threshold or policy validation fails
+- **Build & push Docker image** on main merges; semantic version tags
+
+## Cursor Behavior
+
+### When Adding Code
+- **Generate tests first,** then minimal code to pass
+- **Create/extend DTOs** with explicit types; update OpenAPI
+- **If touching policies,** add policy changelog + tests
+- **For new endpoints,** provide sample requests/responses
+
+### When Modifying Code
+- **Show diff rationale;** update tests/docs accordingly
+- **Flag potential migrations** or breaking changes
+
+### When Creating PR
+- **Use Conventional Commit title**
+- **Include Why/What/How tested/Risks/Rollback**
+- **List user flows** and edge cases affected
+
+## User Flows
+
+1. **Upload & auto-book (GREEN):** receipt + plain text → journal entry + reason codes
+2. **Upload with clarification (YELLOW):** system asks one question, then books
+3. **Policy conflict (RED):** parked with clear reason; user fixes and retries
+4. **View booking:** lines, VAT calc, reason codes, original document
+5. **Rollback & rebook:** maintain audit chain and hash links
+6. **Policy management:** update policy version, effective_from; dry-run validate
+7. **Export & audit:** SIE/SAF-T; verify WORM-like chain
+8. **Bank match (later):** suggest matches; tolerances; rounding
+9. **Supplier learning (later):** vendor → category/VAT mapping confidence
+
+## Edge Cases
+
+- Mixed VAT on a single receipt (12% + 25%)
+- Foreign currency with missing FX or rounding drift
+- Low-quality/handwritten receipts (OCR uncertainty)
+- Duplicate submissions (same hash+amount+date)
+- Refunds/Credit notes (negative totals)
+- Partial payments / split bills
+- Tips/gratuity VAT handling differences
+- Date mismatches (service vs posting vs bank)
+- Representation without required purpose/attendees
+- Recurring SaaS proration/upgrade/downgrade
+- Reverse charge / EU digital services / OSS/IOSS
+- Import VAT + customs fees
+- Out-of-period posting / closed period
+- DST/timezone boundary effects on periodization
+- Very large receipts (timeout)
+- Ambiguous merchant names (misclassification)
+- Policy changes mid-period requiring re-eval
+- Rounding errors—must use Decimal only
+- Bank mismatches (similar amount different date/vendor)
+
+## Start Here Features
+
+1. **Policy DSL + validation** (SE baseline for representation, taxi, SaaS)
+2. **Rule engine:** VAT/caps/posting mapping with tests
+3. **Booking core:** JournalEntry/Lines (Decimal), reason codes, WORM audit, SIE export stub
+4. **Stoplight service:** thresholds, requires, one-question compose
+5. **Pipeline orchestrator:** idempotent OCR→NLU(stub)→Rules→Booking
+6. **Minimal API surface:** /documents/upload, /pipelines/start, /bookings/{id}
+7. **CI baseline:** lint, types, tests, security, policy-validate
+
+## Non-Functional Requirements
+
+### Observability
+- **Structured JSON logs** with correlation IDs
+- **OpenTelemetry spans** for OCR→NLU→Rules→Booking
+- **Metrics:** automation rate (green), yellow resolve rate, accuracy@scenarios, latency median
+
+### Performance
+- **Median time-to-book < 15s** for MVP scenarios
+- **Rule engine eval < 50ms;** proposals < 250ms (excl. OCR/LLM)
+
+### Reliability
+- **Idempotent steps;** safe retries; dedupe protections
+- **At-least-once delivery** for jobs with exactly-once semantics at write boundaries
+
+### Compliance
+- **EU/EES data residency;** GDPR DPIA documented
+- **WORM audit and export correctness** (SIE/SAF-T) tests in CI

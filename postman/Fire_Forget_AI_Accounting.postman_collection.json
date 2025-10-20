@@ -1,0 +1,968 @@
+{
+	"info": {
+		"_postman_id": "fireforget-accounting-api",
+		"name": "Fire & Forget AI Accounting API",
+		"description": "Complete API collection for testing the Fire & Forget AI Accounting application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "fireforget-accounting"
+	},
+	"item": [
+		{
+			"name": "Health & Status",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check if the API is healthy and running"
+					},
+					"response": []
+				},
+				{
+					"name": "Root Endpoint",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Get API information and version"
+					},
+					"response": []
+				}
+			],
+			"description": "Basic health and status endpoints"
+		},
+		{
+			"name": "Documents",
+			"item": [
+				{
+					"name": "Upload Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Receipt or invoice file (PDF, JPG, PNG)"
+								},
+								{
+									"key": "company_id",
+									"value": "{{company_id}}",
+									"type": "text",
+									"description": "Company UUID"
+								},
+								{
+									"key": "user_id",
+									"value": "{{user_id}}",
+									"type": "text",
+									"description": "User UUID (optional)"
+								},
+								{
+									"key": "user_text",
+									"value": "Business lunch with client",
+									"type": "text",
+									"description": "User instruction or context (optional)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"documents",
+								"upload"
+							]
+						},
+						"description": "Upload a document and start the processing pipeline"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/{{document_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"documents",
+								"{{document_id}}"
+							]
+						},
+						"description": "Get document details by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "List Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents?company_id={{company_id}}&limit=50&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"documents"
+							],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "{{company_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "List documents for a company"
+					},
+					"response": []
+				}
+			],
+			"description": "Document management endpoints"
+		},
+		{
+			"name": "Pipelines",
+			"item": [
+				{
+					"name": "Start Pipeline",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"document_id\": \"{{document_id}}\",\n  \"user_text\": \"Business lunch with client - please book as representation expense\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/pipelines/start?company_id={{company_id}}&user_id={{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pipelines",
+								"start"
+							],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "{{company_id}}"
+								},
+								{
+									"key": "user_id",
+									"value": "{{user_id}}"
+								}
+							]
+						},
+						"description": "Start document processing pipeline"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pipeline Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/pipelines/{{pipeline_run_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pipelines",
+								"{{pipeline_run_id}}"
+							]
+						},
+						"description": "Get pipeline run status and progress"
+					},
+					"response": []
+				},
+				{
+					"name": "List Pipelines",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/pipelines?company_id={{company_id}}&limit=50&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pipelines"
+							],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "{{company_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "List pipeline runs for a company"
+					},
+					"response": []
+				}
+			],
+			"description": "Pipeline management endpoints"
+		},
+		{
+			"name": "Bookings",
+			"item": [
+				{
+					"name": "Get Booking",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bookings/{{booking_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bookings",
+								"{{booking_id}}"
+							]
+						},
+						"description": "Get journal entry details by booking ID"
+					},
+					"response": []
+				},
+				{
+					"name": "List Bookings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/bookings?company_id={{company_id}}&limit=50&offset=0",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bookings"
+							],
+							"query": [
+								{
+									"key": "company_id",
+									"value": "{{company_id}}"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "List journal entries for a company"
+					},
+					"response": []
+				}
+			],
+			"description": "Booking and journal entry endpoints"
+		},
+		{
+			"name": "Policies",
+			"item": [
+				{
+					"name": "List Policies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/policies?country=SE",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"policies"
+							],
+							"query": [
+								{
+									"key": "country",
+									"value": "SE",
+									"description": "Country code (SE, NO, DK, FI)"
+								}
+							]
+						},
+						"description": "List active policies for a country"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Policy",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/policies/SE_REPR_MEAL_V1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"policies",
+								"SE_REPR_MEAL_V1"
+							]
+						},
+						"description": "Get specific policy details"
+					},
+					"response": []
+				}
+			],
+			"description": "Policy management endpoints"
+		},
+		{
+			"name": "Natural Language Processing",
+			"item": [
+				{
+					"name": "Process Natural Language Input",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Business lunch today with the project manager of Example AB at Example restaurant, total amount 1500 SEK, paid with company credit card\",\n  \"company_id\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process"
+							]
+						},
+						"description": "Process natural language input and create a booking automatically"
+					},
+					"response": []
+				},
+				{
+					"name": "Business Lunch Example",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Business lunch with 3 clients from Acme Corp at Restaurant Stockholm, 1200 SEK including VAT\",\n  \"company_id\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process"
+							]
+						},
+						"description": "Test business lunch scenario with multiple attendees"
+					},
+					"response": []
+				},
+				{
+					"name": "Taxi Ride Example",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Taxi from office to client meeting at Arlanda Airport, 350 SEK, paid with company card\",\n  \"company_id\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process"
+							]
+						},
+						"description": "Test taxi transport scenario"
+					},
+					"response": []
+				},
+				{
+					"name": "SaaS Subscription Example",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Monthly subscription for Slack workspace, 89 SEK including VAT, paid with company credit card\",\n  \"company_id\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process"
+							]
+						},
+						"description": "Test SaaS subscription scenario"
+					},
+					"response": []
+				},
+				{
+					"name": "Office Supplies Example",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"text\": \"Office supplies from IKEA, pens and notebooks for the office, 450 SEK including VAT\",\n  \"company_id\": \"{{company_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process"
+							]
+						},
+						"description": "Test office supplies scenario"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Examples",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/examples",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"examples"
+							]
+						},
+						"description": "Get example natural language inputs for different expense types"
+					},
+					"response": []
+				},
+				{
+					"name": "Provide Clarification",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"clarification\": \"There were 3 people at the lunch meeting\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/clarify",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"clarify"
+							]
+						},
+						"description": "Provide clarification for YELLOW status bookings"
+					},
+					"response": []
+				}
+			],
+			"description": "Natural language processing endpoints for creating bookings from text input"
+		},
+		{
+			"name": "Test Scenarios",
+			"item": [
+				{
+					"name": "Representation Meal - Complete Flow",
+					"item": [
+						{
+							"name": "1. Upload Receipt",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "multipart/form-data"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": [],
+											"description": "Restaurant receipt (PDF/JPG/PNG)"
+										},
+										{
+											"key": "company_id",
+											"value": "{{company_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_id",
+											"value": "{{user_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_text",
+											"value": "Business lunch with 3 clients from Acme Corp",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/documents/upload",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"documents",
+										"upload"
+									]
+								},
+								"description": "Upload a restaurant receipt for representation meal"
+							},
+							"response": []
+						},
+						{
+							"name": "2. Check Pipeline Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/pipelines/{{pipeline_run_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"pipelines",
+										"{{pipeline_run_id}}"
+									]
+								},
+								"description": "Check if the pipeline has completed processing"
+							},
+							"response": []
+						},
+						{
+							"name": "3. Get Booking Result",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/bookings/{{booking_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"bookings",
+										"{{booking_id}}"
+									]
+								},
+								"description": "Get the final journal entry if pipeline completed successfully"
+							},
+							"response": []
+						}
+					],
+					"description": "Complete flow for representation meal scenario"
+				},
+				{
+					"name": "Taxi Transport - Complete Flow",
+					"item": [
+						{
+							"name": "1. Upload Taxi Receipt",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "multipart/form-data"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": [],
+											"description": "Taxi receipt (PDF/JPG/PNG)"
+										},
+										{
+											"key": "company_id",
+											"value": "{{company_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_id",
+											"value": "{{user_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_text",
+											"value": "Taxi to client meeting",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/documents/upload",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"documents",
+										"upload"
+									]
+								},
+								"description": "Upload a taxi receipt"
+							},
+							"response": []
+						},
+						{
+							"name": "2. Check Pipeline Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/pipelines/{{pipeline_run_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"pipelines",
+										"{{pipeline_run_id}}"
+									]
+								},
+								"description": "Check pipeline processing status"
+							},
+							"response": []
+						}
+					],
+					"description": "Complete flow for taxi transport scenario"
+				},
+				{
+					"name": "SaaS Subscription - Complete Flow",
+					"item": [
+						{
+							"name": "1. Upload Subscription Invoice",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "multipart/form-data"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "file",
+											"type": "file",
+											"src": [],
+											"description": "Software subscription invoice (PDF/JPG/PNG)"
+										},
+										{
+											"key": "company_id",
+											"value": "{{company_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_id",
+											"value": "{{user_id}}",
+											"type": "text"
+										},
+										{
+											"key": "user_text",
+											"value": "Monthly subscription for project management software",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{base_url}}/api/v1/documents/upload",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"documents",
+										"upload"
+									]
+								},
+								"description": "Upload a software subscription invoice"
+							},
+							"response": []
+						},
+						{
+							"name": "2. Check Pipeline Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/v1/pipelines/{{pipeline_run_id}}",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"pipelines",
+										"{{pipeline_run_id}}"
+									]
+								},
+								"description": "Check pipeline processing status"
+							},
+							"response": []
+						}
+					],
+					"description": "Complete flow for SaaS subscription scenario"
+				}
+			],
+			"description": "End-to-end test scenarios for MVP use cases"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-generate UUIDs if not set",
+					"if (!pm.environment.get('company_id')) {",
+					"    pm.environment.set('company_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+					"}",
+					"if (!pm.environment.get('user_id')) {",
+					"    pm.environment.set('user_id', pm.variables.replaceIn('{{$randomUUID}}'));",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-extract IDs from responses",
+					"if (pm.response.json() && pm.response.json().document_id) {",
+					"    pm.environment.set('document_id', pm.response.json().document_id);",
+					"}",
+					"if (pm.response.json() && pm.response.json().pipeline_run_id) {",
+					"    pm.environment.set('pipeline_run_id', pm.response.json().pipeline_run_id);",
+					"}",
+					"if (pm.response.json() && pm.response.json().journal_entry && pm.response.json().journal_entry.id) {",
+					"    pm.environment.set('booking_id', pm.response.json().journal_entry.id);",
+					"}",
+					"// Handle natural language responses",
+					"if (pm.response.json() && pm.response.json().booking_id) {",
+					"    pm.environment.set('booking_id', pm.response.json().booking_id);",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "company_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "document_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "pipeline_run_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "booking_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

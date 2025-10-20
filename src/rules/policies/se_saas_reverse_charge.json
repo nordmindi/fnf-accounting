@@ -1,0 +1,37 @@
+{
+  "id": "SE_SAAS_REVERSE_CHARGE_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish SaaS/IT services - Reverse charge",
+  "description": "IT/Cloud services from foreign supplier with reverse charge (omvänd skattskyldighet)",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "saas_subscription",
+      "vendor_patterns": ["amazon web services", "aws", "google cloud", "microsoft azure"]
+    },
+    "requires": [
+      {"field": "service_period", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "RC25",
+      "reverse_charge": true,
+      "report_boxes": {"21": "net_before_cap", "30": "vat_before_cap", "48": "vat_before_cap"}
+    },
+    "posting": [
+      {"account": "6540", "side": "D", "amount": "net_before_cap", "description": "IT-tjänster (omvänd moms)"},
+      {"account": "2614", "side": "K", "amount": "vat_before_cap", "description": "Utgående moms omvänd 25%"},
+      {"account": "2645", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms omvänd 25%"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}
+
+

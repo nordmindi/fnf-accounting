@@ -1,0 +1,31 @@
+{
+  "id": "SE_OTHER_BUSINESS_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Other Business Expense Policy",
+  "description": "Policy for general business expenses in Sweden",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "other_business"
+    },
+    "requires": [
+      {"field": "purpose", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25"
+    },
+    "posting": [
+      {"account": "6540", "side": "D", "amount": "net_before_cap", "description": "General business expenses"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "VAT on business expenses"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Cash/Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.5
+    }
+  }
+}

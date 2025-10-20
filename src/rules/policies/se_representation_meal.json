@@ -1,0 +1,35 @@
+{
+  "id": "SE_REPR_MEAL_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Representation Meal Policy",
+  "description": "Policy for representation meals in Sweden with VAT cap and deductible/non-deductible split",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "representation_meal"
+    },
+    "requires": [
+      {"field": "attendees_count", "op": ">=", "value": 1},
+      {"field": "purpose", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 12,
+      "cap_sek_per_person": 300,
+      "code": "12",
+      "deductible_split": true
+    },
+    "posting": [
+      {"account": "6071", "side": "D", "amount": "deductible_net", "description": "Representation, avdragsgill"},
+      {"account": "6072", "side": "D", "amount": "non_deductible_net", "description": "Representation, ej avdragsgill"},
+      {"account": "2641", "side": "D", "amount": "vat_deductible", "description": "Ingående moms, avdragsgill"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Cash/Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

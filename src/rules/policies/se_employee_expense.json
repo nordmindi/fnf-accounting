@@ -1,0 +1,32 @@
+{
+  "id": "SE_EMPLOYEE_EXPENSE_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Employee Expense Policy",
+  "description": "Policy for employee expenses paid with private card (utlägg)",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "employee_expense"
+    },
+    "requires": [
+      {"field": "employee_name", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25",
+      "reverse_charge": false
+    },
+    "posting": [
+      {"account": "6540", "side": "D", "amount": "net_before_cap", "description": "Utlägg från anställd"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms 25%"},
+      {"account": "2440", "side": "K", "amount": "gross", "description": "Utläggsskuld till anställd"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

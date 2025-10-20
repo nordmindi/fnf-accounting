@@ -1,0 +1,33 @@
+{
+  "id": "SE_COMPUTER_PURCHASE_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Computer Purchase Policy",
+  "description": "Policy for computer purchases as tangible fixed assets",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "computer_purchase",
+      "vendor_patterns": ["elgiganten", "media markt", "webhallen", "inet", "komplett", "netonnet"]
+    },
+    "requires": [
+      {"field": "total_amount", "op": ">=", "value": 1000}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25",
+      "reverse_charge": false
+    },
+    "posting": [
+      {"account": "1630", "side": "D", "amount": "net_before_cap", "description": "Datorer och IT-utrustning"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms 25%"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

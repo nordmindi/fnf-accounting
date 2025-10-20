@@ -1,0 +1,31 @@
+{
+  "id": "SE_SAAS_SUBSCRIPTION_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish SaaS Subscription Policy",
+  "description": "Policy for software subscriptions and cloud services in Sweden",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "saas_subscription"
+    },
+    "requires": [
+      {"field": "service_period", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25"
+    },
+    "posting": [
+      {"account": "6541", "side": "D", "amount": "net_before_cap", "description": "Software subscriptions"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "VAT on subscriptions"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Cash/Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

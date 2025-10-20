@@ -1,0 +1,34 @@
+{
+  "id": "SE_MOBILE_PHONE_INSTALLMENT_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Mobile Phone Installment Purchase Policy",
+  "description": "Policy for mobile phone purchases with installment payments as tangible fixed assets",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "mobile_phone_purchase",
+      "vendor_patterns": ["netonnet", "elgiganten", "media markt", "webhallen", "inet", "komplett"]
+    },
+    "requires": [
+      {"field": "installment_months", "op": ">=", "value": 1},
+      {"field": "total_amount", "op": ">=", "value": 1000}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25",
+      "reverse_charge": false
+    },
+    "posting": [
+      {"account": "1630", "side": "D", "amount": "net_before_cap", "description": "Mobiltelefoner och kommunikationsutrustning"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms 25%"},
+      {"account": "2440", "side": "K", "amount": "gross", "description": "Leverantörsskuld (delbetalning)"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "SE_LEASING_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Leasing Policy",
+  "description": "Policy for leasing agreements (kopiator, equipment)",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "leasing"
+    },
+    "requires": [
+      {"field": "lease_period", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25",
+      "reverse_charge": false
+    },
+    "posting": [
+      {"account": "6540", "side": "D", "amount": "net_before_cap", "description": "Leasingkostnader"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms 25%"},
+      {"account": "2440", "side": "K", "amount": "gross", "description": "Leverantörsskuld"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

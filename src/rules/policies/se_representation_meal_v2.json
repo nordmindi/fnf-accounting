@@ -1,0 +1,35 @@
+{
+  "id": "SE_REPR_MEAL_V2",
+  "version": "V2",
+  "country": "SE",
+  "effective_from": "2025-07-01",
+  "name": "Swedish Representation Meal Policy V2",
+  "description": "Updated policy for representation meals with digital representation support",
+  "bas_version": "2025_v2.0",
+  "rules": {
+    "match": {
+      "intent": "representation_meal"
+    },
+    "requires": [
+      {"field": "attendees_count", "op": ">=", "value": 1},
+      {"field": "purpose", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 12,
+      "cap_sek_per_person": 300,
+      "code": "12",
+      "deductible_split": true
+    },
+    "posting": [
+      {"account": "6071", "side": "D", "amount": "deductible_net", "description": "Representation, avdragsgill"},
+      {"account": "6072", "side": "D", "amount": "non_deductible_net", "description": "Representation, ej avdragsgill"},
+      {"account": "2641", "side": "D", "amount": "vat_deductible", "description": "Ingående moms, avdragsgill"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Cash/Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}

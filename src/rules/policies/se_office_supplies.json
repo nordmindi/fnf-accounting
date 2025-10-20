@@ -1,0 +1,32 @@
+{
+  "id": "SE_OFFICE_SUPPLIES_V1",
+  "version": "V1",
+  "country": "SE",
+  "effective_from": "2024-01-01",
+  "name": "Swedish Office Supplies Policy",
+  "description": "Policy for office supplies and materials from Swedish suppliers",
+  "bas_version": "2025_v1.0",
+  "rules": {
+    "match": {
+      "intent": "office_supplies"
+    },
+    "requires": [
+      {"field": "purpose", "op": "exists"}
+    ],
+    "vat": {
+      "rate": 25,
+      "code": "25",
+      "reverse_charge": false
+    },
+    "posting": [
+      {"account": "6540", "side": "D", "amount": "net_before_cap", "description": "Kontorsmaterial och förbrukningsvaror"},
+      {"account": "2640", "side": "D", "amount": "vat_before_cap", "description": "Ingående moms 25%"},
+      {"account": "1930", "side": "K", "amount": "gross", "description": "Bank"}
+    ],
+    "stoplight": {
+      "on_missing_required": "YELLOW",
+      "on_fail": "RED",
+      "confidence_threshold": 0.8
+    }
+  }
+}
