@@ -620,6 +620,102 @@
 						"description": "Provide clarification for YELLOW status bookings"
 					},
 					"response": []
+				},
+				{
+					"name": "Process with Receipt (Text + File)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "text",
+									"value": "Business lunch with 2 people, 1200 SEK",
+									"type": "text"
+								},
+								{
+									"key": "company_id",
+									"value": "{{company_id}}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Optional receipt file (image, PDF, text)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/process-with-receipt",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"process-with-receipt"
+							]
+						},
+						"description": "Process natural language input with optional receipt attachment in a single request"
+					},
+					"response": []
+				},
+				{
+					"name": "Attach Receipt to Existing Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "booking_id",
+									"value": "{{booking_id}}",
+									"type": "text"
+								},
+								{
+									"key": "company_id",
+									"value": "{{company_id}}",
+									"type": "text"
+								},
+								{
+									"key": "file",
+									"type": "file",
+									"src": [],
+									"description": "Receipt file to attach to the booking"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/natural-language/attach-receipt",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"natural-language",
+								"attach-receipt"
+							]
+						},
+						"description": "Attach a receipt to an existing booking (use when user answers 'yes' to receipt attachment prompt)"
+					},
+					"response": []
 				}
 			],
 			"description": "Natural language processing endpoints for creating bookings from text input"
