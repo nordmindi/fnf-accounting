@@ -1,0 +1,76 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information",
+    "submit": "Submit",
+    "processing": "Processing..."
+  },
+  "navigation": {
+    "fire": "Fire",
+    "booked": "Bokfört",
+    "reports": "Rapporter",
+    "settings": "Inställningar"
+  },
+  "screens": {
+    "fire": {
+      "title": "Fire & Forget Accounting",
+      "subtitle": "AI-powered expense automation",
+      "input_placeholder": "Business lunch with clients today, 3 people - 1500 SEK",
+      "submit_button": "Submit Expense",
+      "success_title": "Booking created successfully!",
+      "activity_feed": "Activity Feed",
+      "system_notification": "System Notification"
+    },
+    "booked": {
+      "title": "Bokfört",
+      "subtitle": "View your booked expenses"
+    },
+    "reports": {
+      "title": "Rapporter",
+      "subtitle": "Financial reports and analytics"
+    },
+    "settings": {
+      "title": "Inställningar",
+      "subtitle": "App settings and preferences"
+    }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to Your App",
+      "subtitle": "Let's get you started"
+    },
+    "language": {
+      "title": "Choose Language",
+      "description": "Select your preferred language"
+    },
+    "theme": {
+      "title": "Choose Theme",
+      "description": "Pick your preferred appearance",
+      "light": "Light",
+      "dark": "Dark",
+      "auto": "Auto"
+    },
+    "disclaimer": {
+      "title": "Terms & Privacy",
+      "content": "By continuing, you agree to our Terms of Service and Privacy Policy.",
+      "accept": "I understand and agree",
+      "required": "Please accept the terms to continue"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "nickname_required": "Please enter a nickname",
+    "email_invalid": "Please enter a valid email address"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "common": {
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "close": "Stäng",
+    "back": "Tillbaka",
+    "next": "Nästa",
+    "done": "Klar",
+    "loading": "Laddar...",
+    "error": "Fel",
+    "success": "Framgång",
+    "warning": "Varning",
+    "info": "Information",
+    "submit": "Skicka",
+    "processing": "Bearbetar..."
+  },
+  "navigation": {
+    "fire": "Fire",
+    "booked": "Bokfört",
+    "reports": "Rapporter",
+    "settings": "Inställningar"
+  },
+  "screens": {
+    "fire": {
+      "title": "Fire & Forget Accounting",
+      "subtitle": "AI-driven kostnadsautomatisering",
+      "input_placeholder": "Affärslunch med kunder idag, 3 personer - 1500 SEK",
+      "submit_button": "Skicka kostnad",
+      "success_title": "Bokning skapad framgångsrikt!",
+      "activity_feed": "Aktivitetsflöde",
+      "system_notification": "Systemmeddelande"
+    },
+    "booked": {
+      "title": "Bokfört",
+      "subtitle": "Visa dina bokade kostnader"
+    },
+    "reports": {
+      "title": "Rapporter",
+      "subtitle": "Finansiella rapporter och analyser"
+    },
+    "settings": {
+      "title": "Inställningar",
+      "subtitle": "Appinställningar och preferenser"
+    }
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Välkommen till din app",
+      "subtitle": "Låt oss komma igång"
+    },
+    "language": {
+      "title": "Välj språk",
+      "description": "Välj ditt föredragna språk"
+    },
+    "theme": {
+      "title": "Välj tema",
+      "description": "Välj ditt föredragna utseende",
+      "light": "Ljust",
+      "dark": "Mörkt",
+      "auto": "Auto"
+    },
+    "disclaimer": {
+      "title": "Villkor & Integritet",
+      "content": "Genom att fortsätta godkänner du våra användarvillkor och integritetspolicy.",
+      "accept": "Jag förstår och godkänner",
+      "required": "Vänligen godkänn villkoren för att fortsätta"
+    }
+  },
+  "validation": {
+    "required": "Detta fält är obligatoriskt",
+    "nickname_required": "Vänligen ange ett smeknamn",
+    "email_invalid": "Vänligen ange en giltig e-postadress"
+  }
+}

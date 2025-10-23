@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "Fire & Forget Accounting",
+    "slug": "fire-forget-accounting",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#0F1724"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fireforget.accounting",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.fireforget.accounting",
+      "versionCode": 1,
+      "permissions": []
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "fire-forget-accounting-project"
+      }
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": "54.0.0",
+    "owner": "fireforget-accounting",
+    "description": "AI-powered accounting automation with natural language processing.",
+    "githubUrl": "https://github.com/fireforget/accounting"
+  }
+}
