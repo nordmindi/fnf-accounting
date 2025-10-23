@@ -14,6 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 // Import screens
 import FireScreen from '@/screens/FireScreen';
 import HomeScreen from '@/screens/HomeScreen';
+import BookedScreen from '@/screens/BookedScreen';
+import ReportsScreen from '@/screens/ReportsScreen';
+import SettingsScreen from '@/screens/SettingsScreen';
 
 // Import state and theme
 import { useUserStore, useUIStore } from '@/state';
@@ -71,17 +74,17 @@ function MainNavigator() {
       />
       <Tab.Screen 
         name="Bokfört" 
-        component={HomeScreen} // Placeholder
+        component={BookedScreen}
         options={{ title: 'Bokfört' }}
       />
       <Tab.Screen 
         name="Rapporter" 
-        component={HomeScreen} // Placeholder
+        component={ReportsScreen}
         options={{ title: 'Rapporter' }}
       />
       <Tab.Screen 
         name="Inställningar" 
-        component={HomeScreen} // Placeholder
+        component={SettingsScreen}
         options={{ title: 'Inställningar' }}
       />
     </Tab.Navigator>
